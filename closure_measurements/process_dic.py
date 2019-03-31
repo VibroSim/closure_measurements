@@ -6,6 +6,7 @@ import numpy as np
 import scipy
 
 import dg_file as dgf
+import dg_metadata as dgm
 
 from . import dic_ctod
 from . import initial_fit
@@ -43,7 +44,7 @@ def load_dgs(dgsfilename):
         pass
 
     load1=wfmdict["load1"].data
-    load2=wfmdict["load1"].data
+    load2=wfmdict["load2"].data
     Yposvecs=wfmdict["Yposvecs"].data
     
     Yinivec=wfmdict["Yinivec"].data
@@ -67,16 +68,17 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
     for YCnt in range(YRangeSize):
 
         Yposvec=Yposvecs[:,YCnt]
-            for idx1 in range(nloads):
-        #if idx1 != 0:
-        #    continue
-        for idx2 in range(idx1+1,nloads):
+        for idx1 in range(nloads):
+            #if idx1 != 0:
+            #   ccccccjfh continue
+            for idx2 in range(idx1+1,nloads):
 
-            #if idx2 != nloads-1:
-            #    continue
-            (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx)
-            CTODs[:,idx1,idx2,YCnt]=CTOD
-            CTODs[:,,idx2,idx1,YCnt]=-CTOD
+                #if idx2 != nloads-1:
+                #    continue
+                (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx)
+                CTODs[:,idx1,idx2,YCnt]=CTOD
+                CTODs[:,idx2,idx1,YCnt]=-CTOD
+                pass
             pass
         pass
     return CTODs
@@ -110,11 +112,11 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
             
             YPositions[idx1,idx2]=np.array([],dtype='d')
             CTODValues[idx1,idx2]=np.array([],dtype='d')
-            for YCnt in range(YRange_idxs.shape[0]):
+            for YCnt in range(Yposvecs.shape[1]):
                 #if YCnt != 1:
                 #    continue
                 Yposvec=Yposvecs[:,YCnt]
-                CTOD=CTODs[YCnt,idx1,idx2]
+                CTOD=CTODs[:,idx1,idx2,YCnt]
                 
                 if side==1:
                     valid_locations = (Yposvec < CrackCenterY) & (~np.isnan(CTOD))
@@ -134,22 +136,26 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,yt),YPositions,load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
             InitialCoeffs[:,idx1,idx2]=(c5,yt)
             npoints[idx1,idx2]=YPositions[idx1,idx2].shape[0]
-            Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels_side1[idx1,idx2])**2.0)/npoints[idx1,idx2]
+            Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels[idx1,idx2])**2.0)/npoints[idx1,idx2]
             
             
             if doplots:
-                from matplotlib import pyplot as pl
-
-                pl.figure()
-                #YPositionsSort=np.argsort(YPositions)
-                #YPositionsSorted=YPositions[YPositionsSort]
-                #CTODValuesSorted=
-                pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'-',
-                        YPositions[idx1,idx2]*1e3,InitialModels[idx1,idx2]*1e6,'-')
-                pl.xlabel('Y (mm)')
-                pl.ylabel('CTOD and initial model (um)')
-                pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
-                pl.grid()
+                # Do random sub-percentage
+                if np.random.rand() < .05:
+                    
+                    from matplotlib import pyplot as pl
+                    
+                    pl.figure()
+                    #YPositionsSort=np.argsort(YPositions)
+                    #YPositionsSorted=YPositions[YPositionsSort]
+                    #CTODValuesSorted=
+                    pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
+                            YPositions[idx1,idx2]*1e3,InitialModels[idx1,idx2]*1e6,'-')
+                    pl.xlabel('Y (mm)')
+                    pl.ylabel('CTOD and initial model (um)')
+                    pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
+                    pl.grid()
+                    pass
                 pass
             
             pass
@@ -178,14 +184,17 @@ def full_model_kernel(sigma,YPosition,c5,tck,side):
         sqrtarg = yt-Yposvec
         pass
     
-    sqrtarg[sqrtarg < 0.0] = 0.0
-    modelvals = c5*np.sqrt(sqrtarg)*
+    #sqrtarg[sqrtarg < 0.0] = 0.0
+    if sqrtarg < 0.0:
+        sqrtarg=0.0
+        pass
+    
+    modelvals = c5*np.sqrt(sqrtarg)
     return modelvals
 
 
+def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot):
 
-def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side):
-    
     splinecoeff=params[:4]
     c5=params[4]
     
@@ -213,6 +222,27 @@ def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload
                 pass
             pass
         pass
+
+    print("full_model_residual: Calculate at params=%s; err=%g" % (str(params),err))
+
+    if full_model_residual_plot is not None:
+        from matplotlib import pyplot as pl
+        pl.figure(full_model_residual_plot.number)
+        pl.clf()
+        loads=np.linspace(minload,maxload,20)
+        pl.plot(loads/1e6,scipy.interpolate.splev(loads,tck)*1e3,'-')
+        pl.grid()
+        pl.title('params=%s\nerr=%g' % (str(params),err))
+        pl.xlabel('load (MPa)')
+        pl.ylabel('Tip position (mm)')
+
+        #full_model_residual_plot.canvas.draw()
+        #full_model_residual_plot.canvas.flush_events()
+        pl.savefig('/tmp/loadplot.png',dpi=300)
+        pass
+
+        
+
     
     return err
 
@@ -228,7 +258,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     return yt
 
 
-def CalcFullModel(load1,load2,InitialCoeffs,npoints,YPositions,CTODValues,side,doplots=True):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,side,doplots=True):
     # Our model is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
@@ -258,12 +288,12 @@ def CalcFullModel(load1,load2,InitialCoeffs,npoints,YPositions,CTODValues,side,d
     min_c5 = np.sqrt(2*50e-6)/1000e9
     
     # Unwrap the error and yt coefficients
-    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:] >= min_c5)
+    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
     
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
     yt_unwrapped = InitialCoeffs[1,:,:].ravel()[valid]
-    avg_load=load1+load2
+    avg_load=(load1+load2).mean(axis=2)/2.0
     avg_load_unwrapped=avg_load.ravel()[valid]
     
     # Now sort them so lowest error comes first
@@ -279,38 +309,49 @@ def CalcFullModel(load1,load2,InitialCoeffs,npoints,YPositions,CTODValues,side,d
     avg_load_vals_sorted=avg_load_vals[avg_load_vals_sort]
     yt_vals_sorted = yt_vals[avg_load_vals_sort]
     
-    minload=np.min(load1.ravel())
-    maxload=np.max(load1.ravel())
+    minload=np.min(load1[~np.isnan(load1)].ravel())
+    maxload=np.max(load1[~np.isnan(load1)].ravel())
     
     # Use scipy.interpolate.splrep to do fit.
     # task=-1 means we supply interior knots (there aren't any)
     # k=3 means 3rd order
     (t,c,k) = scipy.interpolate.splrep(avg_load_vals_sorted,yt_vals_sorted,xb=minload,xe=maxload,k=3,task=-1,t=np.array([],dtype='f'))
-    assert(t[:4]==minload)
-    assert(t[4:]==maxload)
+    assert((t[:4]==minload).all())
+    assert((t[4:]==maxload).all())
 
-    assert(c[4:]==0) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
+    assert((c[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
     assert(k==3)
     
     # Plot diagnostics
     if doplots:
+
         from matplotlib import pyplot as pl
         pl.figure()
-        plot(avg_load_unwrapped,yt_unwrapped,'x',
-             avg_load_vals,yt_vals,'o')
+        pl.plot(avg_load_unwrapped/1e6,yt_unwrapped*1e3,'x',
+             avg_load_vals/1e6,yt_vals*1e3,'o')
+        pl.xlabel('Load (MPa)')
+        pl.ylabel('Tip position (mm)')
         pl.title('yt')
         
         pl.figure()
-        plot(avg_load_unwrapped,c5_unwrapped,'x',
-             avg_load_vals,c5_vals,'o')
+        pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
+                avg_load_vals/1e6,c5_vals,'o')
+        pl.xlabel('Load (MPa)')
         pl.title('c5')
         pass
-    
 
+
+    full_model_residual_plot=None
+
+    if doplots:
+        from matplotlib import pyplot as pl
+        full_model_residual_plot=pl.figure()
+        pass
+    
     # Perform model fit
 
     seed_param=(c[0],c[1],c[2],c[3],c5)
-    full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=(YPositions,CTODValues,load1,load2,minload,maxload,side),method="nelder-mead",tol=1e-17)
+    full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot),method="nelder-mead",tol=1e-17)
     full_model_params=full_model_result.x
                      
     return (minload,maxload,full_model_params,full_model_result)

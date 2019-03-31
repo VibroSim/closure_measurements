@@ -18,7 +18,7 @@ def initial_model(param,Yposvec,load1,load2,side):
     return modelvals
 
 
-def initial_residual(param,Yposvec,load1,load2,CTOD,side):
+def initial_residual(param,Yposvec,load1,load2,side,CTOD):
 
     modelvals = initial_model(param,Yposvec,load1,load2,side)
     #from matplotlib import pyplot as pl

@@ -39,14 +39,14 @@ def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
 
     ROI_yminidx=0;
     # Shift starting point right while there are any zeros in the ROI out
-    while (DIC_ROI_out[ROI_yminidx,ROI_xminidx:ROI_xmaxidx]==0).any():
+    while ROI_yminidx < DIC_ROI_out.shape[0] and (DIC_ROI_out[ROI_yminidx,ROI_xminidx:ROI_xmaxidx]==0).any():
         ROI_yminidx+=1
         pass
 
 
     ROI_ymaxidx=u_disp.shape[0];
     # Shift ending point left while there are any zeros in the ROI out
-    while (DIC_ROI_out[ROI_ymaxidx-1,ROI_xminidx:ROI_xmaxidx]==0).any():
+    while ROI_ymaxidx >= 0 and (DIC_ROI_out[ROI_ymaxidx-1,ROI_xminidx:ROI_xmaxidx]==0).any():
         ROI_ymaxidx-=1
         pass
     
@@ -78,7 +78,7 @@ def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
         # Average over the area of the square window
         for windowshiftx in range(-window_edge,window_edge+1):
             for windowshifty in range(-window_edge,window_edge+1):
-                u_disp_filtered[(window_edge+windowshifty):(-window_edge+windowshifty),(window_edge+windowshiftx):(-window_edge+windowshiftx)] += u_disp_nanmask[window_edge:-window_edge,window_edge:-window_edge]
+                u_disp_filtered[(window_edge+windowshifty):(u_disp_filtered.shape[0]-window_edge+windowshifty),(window_edge+windowshiftx):(u_disp_filtered.shape[1]-window_edge+windowshiftx)] += u_disp_nanmask[window_edge:-window_edge,window_edge:-window_edge]
                 pass
             pass
         u_disp_filtered /= window**2.0 # divide by the number of items added together
