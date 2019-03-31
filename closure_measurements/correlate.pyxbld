@@ -1,0 +1,8 @@
+def make_ext(modname, pyxfilename):
+    from distutils.extension import Extension
+    return Extension(name=modname,
+                     sources=[pyxfilename],
+		     include_dirs=['/usr/include/suitesparse'],
+		     libraries=['ncorr','opencv_core','opencv_imgproc','opencv_videoio','opencv_highgui','cholmod','spqr','fftw3'],
+                     language='c++',
+                     extra_compile_args=['-O0','-g'])
