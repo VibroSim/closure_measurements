@@ -3,7 +3,7 @@ import os
 
 import multiprocessing
 import numpy as np
-from matplotlib import pyplot as pl 
+#from matplotlib import pyplot as pl 
 from function_as_script import scriptify
 from closure_measurements.perform_dic import execute_dic as execute_dic_function
 execute_dic=scriptify(execute_dic_function)
@@ -16,7 +16,7 @@ execute_dic=scriptify(execute_dic_function)
 # and it will print out the coordinates in meters,
 # suitable for use in
 
-processpool = multiprocessing.Pool(multiprocessing.cpu_count()/4+2)
+processpool = multiprocessing.Pool(multiprocessing.cpu_count()/2+1)
 #processpool=None
 
 if __name__=="__main__":

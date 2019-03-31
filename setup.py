@@ -27,7 +27,7 @@ emdict=dict([ (module.name,module) for module in ext_modules])
 
 correlate_pyx_ext=emdict['closure_measurements.correlate']
 #correlate_pyx_ext.sources.append("extra_c_file.c")
-correlate_pyx_ext.extra_compile_args=['-O0','-g']
+correlate_pyx_ext.extra_compile_args=['-std=c++11', '-O0','-g']
 correlate_pyx_ext.include_dirs = ['/usr/include/suitesparse']
 correlate_pyx_ext.libraries = ['ncorr','opencv_core','opencv_imgproc','opencv_videoio','opencv_highgui','cholmod','spqr','fftw3']
 

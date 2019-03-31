@@ -2,7 +2,6 @@ import sys
 import collections
 import numpy as np
 
-from matplotlib import pyplot as pl
 
 import scipy
 import scipy.optimize
@@ -87,6 +86,7 @@ def dic_plot_click_handler(event):
     pass
 
 def dic_raw_plots(dgdfilename):
+    from matplotlib import pyplot as pl
     (Images,y0,x0,dy,dx,ny,nx,nimages,nloads,xbase,YPosns,StressPosns,ActualStressPosns)=load_dgd(dgdfilename)
     
     maxstress_idx=np.argmax(np.abs(StressPosns))

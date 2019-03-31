@@ -60,7 +60,7 @@ cdef extern from "ncorr.h" namespace "ncorr" nogil:
 
 
     cdef cppclass DIC_analysis_output:
-        vector[Disp2D] disps;
+        vector[Disp2D] disps
 
         pass
         
@@ -92,7 +92,7 @@ cdef extern from "ncorr.h" namespace "ncorr" nogil:
     
     cdef cppclass DIC_analysis_input:
         DIC_analysis_input()
-        DIC_analysis_input(const vector[Image2D]&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type, difference_type, DIC_analysis_config, bool);
+        DIC_analysis_input(const vector[Image2D]&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type, difference_type, DIC_analysis_config, bool)
         @staticmethod
         DIC_analysis_input load(string name)
         
@@ -145,7 +145,7 @@ cdef inline boolarray2numpy(const Array2D[bool] &array):
     cdef size_t ncols
     cdef size_t rowcnt
     cdef size_t colcnt
-    cdef uint8_t *dataptr;
+    cdef uint8_t *dataptr
     cdef np.ndarray[np.uint8_t,ndim=2,mode="fortran"] newarray
     
     #cdef PyObject *newarray_c
@@ -196,7 +196,7 @@ cdef inline Array2D[bool] numpy2boolarray(np.ndarray[np.uint8_t,ndim=2,mode="for
 
     cdef size_t rowcnt
     cdef size_t colcnt
-    cdef uint8_t *dataptr;
+    cdef uint8_t *dataptr
     
     nrows=nparray.shape[0]
     ncols=nparray.shape[1]

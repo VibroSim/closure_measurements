@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 
-from matplotlib import pyplot as pl
+#from matplotlib import pyplot as pl
 
 import scipy
 
@@ -138,6 +138,8 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
             
             
             if doplots:
+                from matplotlib import pyplot as pl
+
                 pl.figure()
                 #YPositionsSort=np.argsort(YPositions)
                 #YPositionsSorted=YPositions[YPositionsSort]
@@ -292,6 +294,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,npoints,YPositions,CTODValues,side,d
     
     # Plot diagnostics
     if doplots:
+        from matplotlib import pyplot as pl
         pl.figure()
         plot(avg_load_unwrapped,yt_unwrapped,'x',
              avg_load_vals,yt_vals,'o')
