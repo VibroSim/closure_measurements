@@ -81,7 +81,7 @@ def load_dgd(dgdfilename):
     # Check for reversed ActualStress 
     # First row of parameter (variable a) is StressPosns
     # Second row of parameter (variable b) is ActualStressPosns
-    correlation=np.corrcoef(np.array((StressPosns.ravel(),ActualStressPosns.ravel()),dtype='d'))[0,1]
+    correlation=np.corrcoef(np.array((StressPosns,np.mean(ActualStressPosns,axis=0)),dtype='d'))[0,1]
     if correlation < 0.0:
         sys.stderr.write("Found reversed ActualStress... Correcting!")
         ActualStressPosns=-ActualStressPosns
