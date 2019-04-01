@@ -56,6 +56,8 @@ if __name__=="__main__":
 
     (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,side=2,doplots=True)
 
+
+    
     
     ## Plot diagnostics...
     # Should have at least one plot that evaluates

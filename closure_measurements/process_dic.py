@@ -4,6 +4,7 @@ import numpy as np
 #from matplotlib import pyplot as pl
 
 import scipy
+import scipy.integrate
 
 import dg_file as dgf
 import dg_metadata as dgm
@@ -250,6 +251,10 @@ def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload
 def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     # create (t,c,k) for scipy splev
     t=np.array([minload]*4 + [maxload]*4,dtype='d')  # four copies of minload followed by four copies of maxload
+
+    splinecoeff=full_model_params[:4]
+    #c5=params[4]
+
     c=np.concatenate((splinecoeff,[0.0]*4))
     k=3
     tck = (t,c,k)
@@ -299,10 +304,10 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     # Now sort them so lowest error comes first
     errsort=np.argsort(Error_unwrapped)
 
-    # Do fit to first 15
-    yt_vals = yt_unwrapped[errsort[:15]]
-    avg_load_vals=avg_load_unwrapped[errsort[:15]]
-    c5_vals = c5_unwrapped[errsort[:15]]
+    # Do fit to first 50
+    yt_vals = yt_unwrapped[errsort[:50]]
+    avg_load_vals=avg_load_unwrapped[errsort[:50]]
+    c5_vals = c5_unwrapped[errsort[:50]]
     
 
     avg_load_vals_sort=np.argsort(avg_load_vals)
@@ -321,16 +326,30 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     assert((c[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
     assert(k==3)
+    seed_param=(c[0],c[1],c[2],c[3],c5)
     
     # Plot diagnostics
     if doplots:
 
+        sigmarange=np.linspace(minload,maxload,150)
+        fittedvals=EvalEffectiveTip(minload,maxload,seed_param,sigmarange)
+
         from matplotlib import pyplot as pl
         pl.figure()
-        pl.plot(avg_load_unwrapped/1e6,yt_unwrapped*1e3,'x',
-             avg_load_vals/1e6,yt_vals*1e3,'o')
-        pl.xlabel('Load (MPa)')
-        pl.ylabel('Tip position (mm)')
+        pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
+                yt_vals*1e3,avg_load_vals/1e6,'o',
+                fittedvals*1e3,sigmarange/1e6,'-')
+        pl.ylabel('Load (MPa)')
+        pl.xlabel('Tip position (mm)')
+        pl.legend(('All DIC fit data','Best 50','Fit to best 50'))
+        pl.grid()
+        pl.title('yt')
+
+        pl.figure()
+        pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x')
+        pl.ylabel('Load (MPa)')
+        pl.xlabel('Tip position (mm)')
+        pl.grid()
         pl.title('yt')
         
         pl.figure()
@@ -338,21 +357,24 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                 avg_load_vals/1e6,c5_vals,'o')
         pl.xlabel('Load (MPa)')
         pl.title('c5')
+        pl.grid()
         pass
 
 
     full_model_residual_plot=None
 
-    if doplots:
-        from matplotlib import pyplot as pl
-        full_model_residual_plot=pl.figure()
-        pass
+    #if doplots:
+    #    from matplotlib import pyplot as pl
+    #    full_model_residual_plot=pl.figure()
+    #    pass
     
     # Perform model fit
 
-    seed_param=(c[0],c[1],c[2],c[3],c5)
-    full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot),method="nelder-mead",tol=1e-17)
-    full_model_params=full_model_result.x
-                     
+    # (full model optimization temporarily disabled)
+    #full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot),method="nelder-mead",tol=1e-17)
+    #full_model_params=full_model_result.x
+    full_model_params = seed_param
+    full_model_result=None
+
     return (minload,maxload,full_model_params,full_model_result)
                      

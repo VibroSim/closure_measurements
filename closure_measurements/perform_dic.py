@@ -77,6 +77,16 @@ def load_dgd(dgdfilename):
     YPosns=Posns["Y"]
     StressPosns=Posns["Stress"]
     ActualStressPosns = ActualPosns["Stress"]
+
+    # Check for reversed ActualStress 
+    # First row of parameter (variable a) is StressPosns
+    # Second row of parameter (variable b) is ActualStressPosns
+    correlation=np.corrcoef(np.array((StressPosns.ravel(),ActualStressPosns.ravel()),dtype='d'))[0,1]
+    if correlation < 0.0:
+        sys.stderr.write("Found reversed ActualStress... Correcting!")
+        ActualStressPosns=-ActualStressPosns
+        pass
+
     
     return (Images,y0,x0,dy,dx,ny,nx,nimages,nloads,xbase,YPosns,StressPosns,ActualStressPosns)
 
