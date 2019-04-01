@@ -102,7 +102,7 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
     YPositions[...]=None
     CTODValues = np.zeros((nloads,nloads),dtype='O')
     CTODValues[...]=None
-    
+
     for idx1 in range(nloads):
         #if idx1 != 0:
         #    continue

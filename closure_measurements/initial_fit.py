@@ -14,7 +14,7 @@ def initial_model(param,Yposvec,load1,load2,side):
         pass
     
     sqrtarg[sqrtarg < 0.0] = 0.0
-    modelvals = c5*np.sqrt(sqrtarg)*(-(load2-load1))
+    modelvals = c5*np.sqrt(sqrtarg)*((load2-load1))
     return modelvals
 
 
