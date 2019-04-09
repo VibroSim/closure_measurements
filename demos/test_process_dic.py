@@ -11,6 +11,8 @@ from closure_measurements.process_dic import Calc_CTODs as calc_CTODs_function
 from closure_measurements.process_dic import CalcInitialModel as CalcInitialModel_function
 from closure_measurements.process_dic import CalcFullModel as CalcFullModel_function
 
+import pyopencl as cl
+
 Calc_CTODs=scriptify(calc_CTODs_function)
 CalcInitialModel=scriptify(CalcInitialModel_function)
 CalcFullModel=scriptify(CalcFullModel_function)
@@ -30,7 +32,9 @@ if __name__=="__main__":
     
     dic_span=20 # formerly step... this is measured in the scaled piexels
     dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
-    
+
+    ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
+    dev = ctx.devices[0]
 
     (dic_dy,dic_dx,dic_ny,dic_nx,YRangeSize,nloads,Yinivec,Yposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterY,TipCoords1,TipCoords2,ROI_dic_xminidx,ROI_dic_xmaxidx) = load_dgs(dgsfilename)
 
@@ -52,9 +56,9 @@ if __name__=="__main__":
      YPositions_side2,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=2,doplots=True)
 
-    (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,side=1,doplots=True)
+    (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,side=1,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
-    (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,side=2,doplots=True)
+    (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,side=2,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
 
     
