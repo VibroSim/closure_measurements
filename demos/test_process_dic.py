@@ -67,5 +67,5 @@ if __name__=="__main__":
     # (Could add additional lines to the InitialModel plots...)
     #pl.figure()
     
-    
+    pl.show()
     pass
