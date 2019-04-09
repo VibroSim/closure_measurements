@@ -61,7 +61,13 @@ def add_to_lineos(astobj,lineno_increment):
         pass
     pass
 
-    
+def py275_exec_bug_workaround(codeobj,globs,locs):
+    """Workaround for bug in Python 2.7.5 where if we exec
+directly inside a nested function we get an error"""
+
+    exec(codeobj,globs,locs)
+    pass
+
 
 def scriptify(callable):
 
@@ -169,8 +175,10 @@ def scriptify(callable):
         #        pass
         #    pass
         
-        # execute!
-        exec(codeobj,context,context)
+        # execute!        
+        #exec(codeobj,context,context)
+
+        py275_exec_bug_workaround(codeobj,context,context)
         if has_return:
             retval=context["_fas_returnval"]
             pass
