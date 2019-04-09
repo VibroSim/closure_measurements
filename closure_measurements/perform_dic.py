@@ -19,11 +19,12 @@ from . import correlate
 from . import dic_ctod
 from . import initial_fit
 
+
 #dgdfilename = sys.argv[1]
 
-TipCoords1=(.313e-3,3.49e-3) # should have smaller value of y
-TipCoords2=(.335e-3,7.20e-3) # Should have larger value of y
-XRange=(.15e-3,.8e-3)
+#TipCoords1=(.313e-3,3.49e-3) # should have smaller value of y
+#TipCoords2=(.335e-3,7.20e-3) # Should have larger value of y
+#XRange=(.15e-3,.8e-3)
 
 def load_dgd(dgdfilename):
     (metadatadict,wfmmetadatadict,expandedwfmdict)=dg_dgdread.dg_dgdread(dgdfilename)

@@ -10,7 +10,7 @@ import sys
 from Cython.Build import cythonize
 
 
-#closure_measurements_package_files=[ "pt_steps/*", "qagse_fparams.c" ]
+closure_measurements_package_files=[ "qagse_fparams.c" ] #, "pt_steps/*" 
 
 
 #console_scripts=["crackheat_invert"]
@@ -44,7 +44,7 @@ setup(name="closure_measurements",
       packages=["closure_measurements"],
                 #"closure_measurements.bin"],
       #data_files=[ ("share/closure_measurements/pt_steps",pt_steps_files),]
-      #package_data={"closure_measurements": closure_measurements_package_files},
+      package_data={"closure_measurements": closure_measurements_package_files},
       entry_points={ #"limatix.processtrak.step_url_search_path": [ "limatix.share.pt_steps = closure_measurements:getstepurlpath" ],
                     #"console_scripts": console_scripts_entrypoints,
                     #"gui_scripts": gui_scripts_entrypoints          

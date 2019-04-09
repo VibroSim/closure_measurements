@@ -11,6 +11,8 @@ import dg_metadata as dgm
 
 from . import dic_ctod
 from . import initial_fit
+from . import full_model
+from . import full_model_accel
 
 def load_dgs(dgsfilename):
     (metadatadict,wfmdict)=dgf.loadsnapshot(dgsfilename)
@@ -111,7 +113,7 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
             #if idx2 != nloads-1:
             #    continue
             
-            YPositions[idx1,idx2]=np.array([],dtype='d')
+            YPositions[idx1,idx2]=np.array([],dtype='f')
             CTODValues[idx1,idx2]=np.array([],dtype='d')
             for YCnt in range(Yposvecs.shape[1]):
                 #if YCnt != 1:
@@ -171,82 +173,6 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
             CTODValues)
 
 
-def full_model_kernel(sigma,YPosition,c5,tck,side):
-    """This is the integrand of: 
-          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
-        where yt is a function of sigma given by the spline
-        coefficents tck
-        """
-    yt = scipy.interpolate.splev(sigma,tck)
-    if side==1:
-        sqrtarg = YPosition-yt
-        pass
-    else:
-        sqrtarg = yt-Yposvec
-        pass
-    
-    #sqrtarg[sqrtarg < 0.0] = 0.0
-    if sqrtarg < 0.0:
-        sqrtarg=0.0
-        pass
-    
-    modelvals = c5*np.sqrt(sqrtarg)
-    return modelvals
-
-
-def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot):
-
-    splinecoeff=params[:4]
-    c5=params[4]
-    
-    # create (t,c,k) for scipy splev
-    t=np.array([minload]*4 + [maxload]*4,dtype='d')  # four copies of minload followed by four copies of maxload
-    c=np.concatenate((splinecoeff,[0.0]*4))
-    k=3
-    tck = (t,c,k)
-
-    err=0.0
-    for idx1 in range(load1.shape[0]):
-        for idx2 in range(idx1+1,load1.shape[1]):
-            # At this load pair, have array of data
-            # over y: YPositions[idx1,idx2]
-            # and CTODValues[idx1,idx2]
-            
-            # Calculate the model value over the
-            # various Y positions:
-            #  integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
-            
-            for YPosIdx in range(len(YPositions[idx1,idx2])):
-                # Evaluate integral at this Y position
-                integral = scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(YPositions[idx1,idx2][YPosIdx],c5,tck,side))[0]
-                err += (integral-CTODValues[idx1,idx2][YPosIdx])**2.0
-                pass
-            pass
-        pass
-
-    print("full_model_residual: Calculate at params=%s; err=%g" % (str(params),err))
-
-    if full_model_residual_plot is not None:
-        from matplotlib import pyplot as pl
-        pl.figure(full_model_residual_plot.number)
-        pl.clf()
-        loads=np.linspace(minload,maxload,20)
-        pl.plot(loads/1e6,scipy.interpolate.splev(loads,tck)*1e3,'-')
-        pl.grid()
-        pl.title('params=%s\nerr=%g' % (str(params),err))
-        pl.xlabel('load (MPa)')
-        pl.ylabel('Tip position (mm)')
-
-        #full_model_residual_plot.canvas.draw()
-        #full_model_residual_plot.canvas.flush_events()
-        pl.savefig('/tmp/loadplot.png',dpi=300)
-        pass
-
-        
-
-    
-    return err
-
 
 def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     # create (t,c,k) for scipy splev
@@ -263,7 +189,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     return yt
 
 
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,side,doplots=True):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,side,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
@@ -274,8 +200,8 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     # where kappa = (3-nu)/(1+nu) for plane stress or
     # kappa=(3-4nu) for plane strain... where nu is Poisson's ratio
 
-    # COD=2uy = ((KI/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)  *sqrt(y-yt)
-    # where KI = sigma*sqrt(pi*a)
+    # COD=2uy = ((KI/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)  *sqrt(y-yt) 
+   # where KI = sigma*sqrt(pi*a)
     # Since this is proportional to sigma, for a fixed length crack
     # Our C5 is expected to equal sqrt(pi*a)*((1/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)
     # or C5=(sqrt(2a)/(E))*(1+nu)*(kappa+1)
@@ -363,18 +289,25 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     full_model_residual_plot=None
 
-    #if doplots:
-    #    from matplotlib import pyplot as pl
-    #    full_model_residual_plot=pl.figure()
-    #    pass
+    if doplots:
+        from matplotlib import pyplot as pl
+        full_model_residual_plot=pl.figure()
+        pass
     
     # Perform model fit
 
-    # (full model optimization temporarily disabled)
-    #full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot),method="nelder-mead",tol=1e-17)
-    #full_model_params=full_model_result.x
-    full_model_params = seed_param
-    full_model_result=None
+    if opencl_ctx is None:
+        full_model_residual=full_model.full_model_residual
+        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
+        pass
+    else:
+        full_model_residual=full_model_accel.full_model_residual_accel
+        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)
+
+    full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
+    full_model_params=full_model_result.x
+    #full_model_result=None
+    #full_model_params = seed_param
 
     return (minload,maxload,full_model_params,full_model_result)
                      
