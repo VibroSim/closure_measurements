@@ -87,7 +87,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
     return CTODs
     
     
-def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots):
+def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller Y values) or side=2 (larger Y values)"""
     
     InitialModels=np.zeros((nloads,nloads),dtype='O')
@@ -132,16 +132,24 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
                 YPositions[idx1,idx2]=np.concatenate((YPositions[idx1,idx2],Yposvec[valid_locations]))
                 CTODValues[idx1,idx2]=np.concatenate((CTODValues[idx1,idx2],CTOD[valid_locations]))
                 pass
-            
-            y0=(1.0e-13,np.mean(YPositions[idx1,idx2]))
-            (c5,yt)=initial_fit.fit_initial_model(y0,YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side,CTODValues[idx1,idx2])
+
+
+            if YPositions[idx1,idx2].shape[0] == 0:
+                # No Data!
+                continue
+
+            y0=(np.sqrt(nominal_length)/nominal_modulus,np.mean(YPositions[idx1,idx2]))
+            #y0=(1.0e-13,np.mean(YPositions[idx1,idx2]))
+            (c5,yt)=initial_fit.fit_initial_model(y0,YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side,CTODValues[idx1,idx2],nominal_length,nominal_modulus,nominal_stress)
+            print("side=%d; yt=%f" % (side,yt))
             InitialModels[idx1,idx2]=initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,yt),YPositions,load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
             InitialCoeffs[:,idx1,idx2]=(c5,yt)
             npoints[idx1,idx2]=YPositions[idx1,idx2].shape[0]
             Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels[idx1,idx2])**2.0)/npoints[idx1,idx2]
-            
-            
+            #import pdb
+            #pdb.set_trace()
+            junk = initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
             if doplots:
                 # Do random sub-percentage
                 if np.random.rand() < .05:
@@ -149,11 +157,12 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,doplots
                     from matplotlib import pyplot as pl
                     
                     pl.figure()
-                    #YPositionsSort=np.argsort(YPositions)
-                    #YPositionsSorted=YPositions[YPositionsSort]
-                    #CTODValuesSorted=
+                    YPositionsSort=np.argsort(YPositions[idx1,idx2])
+                    YPositionsSorted=YPositions[idx1,idx2][YPositionsSort]
+                    #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
+                    InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
                     pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
-                            YPositions[idx1,idx2]*1e3,InitialModels[idx1,idx2]*1e6,'-')
+                            YPositionsSorted*1e3,InitialModelValuesSorted*1e6,'-')
                     pl.xlabel('Y (mm)')
                     pl.ylabel('CTOD and initial model (um)')
                     pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
@@ -217,6 +226,9 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     # Use a first cut C5 estimate to filter out any coefficients that
     # optimized to zero for whatever reason
     min_c5 = np.sqrt(2*50e-6)/1000e9
+
+    (idx1grid,idx2grid)=np.meshgrid(np.arange(InitialCoeffs.shape[1]),np.arange(InitialCoeffs.shape[2]),indexing="ij")
+    
     
     # Unwrap the error and yt coefficients
     valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
@@ -224,6 +236,11 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
     yt_unwrapped = InitialCoeffs[1,:,:].ravel()[valid]
+
+
+    idx1_unwrapped = idx1grid[:,:].ravel()[valid]
+    idx2_unwrapped = idx2grid[:,:].ravel()[valid]
+    
     avg_load=(load1+load2).mean(axis=2)/2.0
     avg_load_unwrapped=avg_load.ravel()[valid]
     
@@ -261,6 +278,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         fittedvals=EvalEffectiveTip(minload,maxload,seed_param,sigmarange)
 
         from matplotlib import pyplot as pl
+
         pl.figure()
         pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
                 yt_vals*1e3,avg_load_vals/1e6,'o',
@@ -268,15 +286,45 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
         pl.legend(('All DIC fit data','Best 50','Fit to best 50'))
-        pl.grid()
         pl.title('yt')
+        pl.grid()
 
-        pl.figure()
-        pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x')
+        
+        fig=pl.figure()
+        pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',picker=5)
+                #yt_vals*1e3,avg_load_vals/1e6,'o',
+                #fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
         pl.grid()
-        pl.title('yt')
+        pl.title('yt (pickable)')
+        def dicfitpick(event):
+            thisline=event.artist
+            xdata=thisline.get_xdata()
+            ydata=thisline.get_ydata()
+            indices = event.ind
+            print("got indices: %s" % (str(indices)))
+
+            for index in indices:
+                pl.figure()
+
+                idx1=idx1_unwrapped[index]
+                idx2=idx2_unwrapped[index]
+                
+                YPositionsSort=np.argsort(YPositions[idx1,idx2])
+                YPositionsSorted=YPositions[idx1,idx2][YPositionsSort]
+                #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
+                InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
+                pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
+                        YPositionsSorted*1e3,InitialModelValuesSorted*1e6,'-')
+                pl.xlabel('Y (mm)')
+                pl.ylabel('CTOD and initial model (um)')
+                pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
+                pl.grid()
+                
+            
+            pass
+        fig.canvas.mpl_connect('pick_event',dicfitpick)
         
         pl.figure()
         pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
@@ -296,6 +344,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     
     # Perform model fit
 
+    """  full model calculation temporarily commented out
     if opencl_ctx is None:
         full_model_residual=full_model.full_model_residual
         args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
@@ -306,8 +355,9 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
     full_model_params=full_model_result.x
-    #full_model_result=None
-    #full_model_params = seed_param
+    """
+    full_model_result=None
+    full_model_params = seed_param
 
     return (minload,maxload,full_model_params,full_model_result)
                      

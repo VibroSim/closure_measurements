@@ -33,6 +33,11 @@ if __name__=="__main__":
     dic_span=20 # formerly step... this is measured in the scaled piexels
     dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
 
+
+    nominal_length=2e-3 # nominal crack length, for nondimensional normalization
+    nominal_modulus=100.0e9 # nominal modulus
+    nominal_stress=50e6 # nominal stress
+    
     ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
     dev = ctx.devices[0]
 
@@ -45,7 +50,7 @@ if __name__=="__main__":
      Error_side1,
      npoints_side1,
      YPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=1,doplots=True)
+     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
 
@@ -54,7 +59,7 @@ if __name__=="__main__":
      Error_side2,
      npoints_side2,
      YPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=2,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,side=1,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
