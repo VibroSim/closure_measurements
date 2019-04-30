@@ -352,7 +352,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                 pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
                 pl.grid()
                 
-            
+                pass
             pass
         fig.canvas.mpl_connect('pick_event',dicfitpick)
         
@@ -374,13 +374,30 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     
     # Perform model fit
 
+    full_model_residual_unaccel=full_model.full_model_residual
+    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
+    
     if opencl_ctx is None:
-        full_model_residual=full_model.full_model_residual
-        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
+        full_model_residual = full_model_residual_unaccel
+        args = args_unaccel
         pass
     else:
         full_model_residual=full_model_accel.full_model_residual_accel
         args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)
+
+        test_accel=True
+        
+        if test_accel:
+
+            # Compare residual output based on seed_param, make sure
+            # it matches between unaccelerated and accelerated models
+            
+            error_unaccel = full_model_residual_unaccel(seed_param,*args_unaccel)
+            error_accel = full_model_residual(seed_param,*args)
+
+            assert( np.abs(error_accel-error_unaccel)/error_unaccel < .001)
+            pass
+        
         pass
     
     full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)

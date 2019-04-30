@@ -381,15 +381,69 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
     k=3
     tck = (t,c,k)
 
+
+    avg_load=(load1+load2)/2.0
     
-    pl.figure(full_model_residual_plot.number)
+    
+    fig=pl.figure(full_model_residual_plot.number)
     pl.clf()
-    loads=np.linspace(minload,maxload,20)
-    pl.plot(loads/1e6,scipy.interpolate.splev(loads,tck)*1e3,'-')
+    #loads=np.linspace(minload,maxload,20)
+    #pl.plot(loads/1e6,scipy.interpolate.splev(loads,tck)*1e3,'-',
+    pl.plot(avg_load.ravel()/1e6,scipy.interpolate.splev(avg_load.ravel(),tck)*1e3,'x',picker=5)
+    
     pl.grid()
-    pl.title('params=%s\nerr=%g' % (str(params),err))
+    pl.title('params=%s\nerr=%g (clickable)' % (str(params),err))
     pl.xlabel('load (MPa)')
     pl.ylabel('Tip position (mm)')
+    def dicfitpick(event):
+        thisline=event.artist
+        xdata=thisline.get_xdata()
+        ydata=thisline.get_ydata()
+        indices = event.ind
+        print("got indices: %s; side=%d" % (str(indices),side))
+        
+        for index in indices:
+            pl.figure()
+            
+            idx1=index // avg_load.shape[1]
+            idx2=index % avg_load.shape[1]
+
+            if YPositions[idx1,idx2] is None:
+                # No data here
+                continue
+            
+            #load=avg_load[idx1,idx2]
+
+            #sys.modules["__main__"].__dict__.update(globals())
+            #sys.modules["__main__"].__dict__.update(locals())
+            YPositionsSort=np.argsort(YPositions[idx1,idx2])
+            YPositionsSorted=YPositions[idx1,idx2][YPositionsSort]
+            #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
+            #InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
+
+            integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(YPosition,c5,tck,side))[0]  for YPosition in YPositionsSorted ],dtype='d')
+
+            pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
+                    YPositionsSorted*1e3,integralvals*1e6,'-')
+            pl.xlabel('Y (mm)')
+            pl.ylabel('CTOD and full model (um)')
+            pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2]/1.e6,load2[idx1,idx2]/1.e6))
+            pl.grid()
+            
+            
+            pass
+        pass
+
+    # disconnect prior callback handlers
+    if "pick_event" in fig.canvas.callbacks.callbacks:
+        for cid in fig.canvas.callbacks.callbacks["pick_event"].keys():
+            fig.canvas.mpl_disconnect(cid)
+            pass
+        pass
+    
+    
+    fig.canvas.mpl_connect('pick_event',dicfitpick)
+
     
     #full_model_residual_plot.canvas.draw()
     #full_model_residual_plot.canvas.flush_events()
