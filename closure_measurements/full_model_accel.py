@@ -74,7 +74,7 @@ doublereal r1mach_(const __constant integer *i)
 #define integrand_sigmaintegral full_model_kernel
 
 
-#define LIMIT 7000  // max # of integration intervals
+//#define LIMIT 7000 // max # of integration intervals
 
 #define qagse_ qagse_sigmaintegral
 #define qelg_ qelg_sigmaintegral
@@ -279,18 +279,23 @@ __kernel void integrate_full_model_kernel(float load1,
                                           float c1,float c2, float c3, float c4,
                                           float c5,
                                           float side,  // positive 1: RHS, negative 1: LHS
+                                          int limit,
+                                          __global float *flists,
+                                          __global int *iords,
                                           __global float *out)
 {
   float result=0.0;
   float epsrel=1e-6f; 
   float epsabs=1e-8f; // !!!*** Do we need to set this more sensibly?
-  float alist[LIMIT];
-  float blist[LIMIT];
-  float rlist[LIMIT];
-  float elist[LIMIT];
-  int iord[LIMIT];
+  //float alist[LIMIT];
+  __global float *alist,*blist,*rlist,*elist;
+  __global int *iord;
+  //float blist[LIMIT];
+  //float rlist[LIMIT];
+  //float elist[LIMIT];
+  //int iord[LIMIT];
   int last=0;
-  int limit=LIMIT;
+  //int limit=LIMIT;
   float abserr=0.0;
   int neval=0;
   int ier=0;
@@ -299,6 +304,12 @@ __kernel void integrate_full_model_kernel(float load1,
 
   Y_idx = get_global_id(0);
   YPosition=YPositions[Y_idx];
+
+  alist = flists + Y_idx*4*limit;
+  blist = flists + Y_idx*4*limit + limit;
+  rlist = flists + Y_idx*4*limit + 2*limit;
+  elist = flists + Y_idx*4*limit + 3*limit;
+  iord = iords + Y_idx*limit;
 
   qagse_sigmaintegral(NULL,
                                &YPosition,&minload,&maxload, // this start/end are the bounds of the splines
@@ -357,7 +368,7 @@ def full_model_kernel(sigma,YPosition,c5,tck,side):
         sqrtarg = YPosition-yt
         pass
     else:
-        sqrtarg = yt-Yposition
+        sqrtarg = yt-YPosition
         pass
     
     #sqrtarg[sqrtarg < 0.0] = 0.0
@@ -403,7 +414,6 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
         print("got indices: %s; side=%d" % (str(indices),side))
         
         for index in indices:
-            pl.figure()
             
             idx1=index // avg_load.shape[1]
             idx2=index % avg_load.shape[1]
@@ -411,6 +421,8 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
             if YPositions[idx1,idx2] is None:
                 # No data here
                 continue
+
+            pl.figure()
             
             #load=avg_load[idx1,idx2]
 
@@ -451,14 +463,23 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
     pass
 
 
+
+
+
+
 def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev):
+
 
     import pyopencl as cl
     mf = cl.mem_flags
+
+    err=0.0
+    numpos=0
     
     prg=get_kernelprog(opencl_ctx);
 
     queue=cl.CommandQueue(opencl_ctx,opencl_dev)
+
     
     c1=params[0]
     c2=params[1]
@@ -467,8 +488,8 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
     c5=params[4]
     
 
-    err=0.0
-    numpos=0
+    limit=7000
+
     for idx1 in range(load1.shape[0]):
 
         # Lists of buffers that are being used by OpenCL
@@ -486,11 +507,14 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
             # Calculate the model value over the
             # various Y positions:
             #  integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
-
             assert(len(YPositions[idx1,idx2].shape)==1)
-
+            
             if YPositions[idx1,idx2].shape[0]==0:
                 continue  # Empty y list... nothing to do here
+                
+            #sys.modules["__main__"].__dict__.update(globals())
+            #sys.modules["__main__"].__dict__.update(locals())
+            #raise ValueError("Break!")
             
             kern = prg.integrate_full_model_kernel
             kern.set_scalar_arg_dtypes([np.float32,np.float32,
@@ -499,17 +523,27 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
                                         np.float32,np.float32,np.float32,np.float32,
                                         np.float32,
                                         np.float32,
-                                        None])
-            
+                                        np.int32,
+                                        None,
+                                        None,
+                                    None])
+        
             assert(YPositions[idx1,idx2].flags.contiguous)
             assert(YPositions[idx1,idx2].dtype==np.float32)
-            
+        
             YPositions_buf = cl.Buffer(opencl_ctx,mf.READ_ONLY,size=YPositions[idx1,idx2].nbytes)
             YCopyEv=cl.enqueue_copy(queue,YPositions_buf,YPositions[idx1,idx2],is_blocking=False);
 
+            flists_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*4*limit*YPositions[idx1,idx2].shape[0]) # 4 LIMIT-length float buffers per work element
+            
+            iord_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*limit*YPositions[idx1,idx2].shape[0]) # 1 LIMIT-length int buffer per work element
+
+        
             out_array=np.empty(YPositions[idx1,idx2].shape,dtype='f')
             out_buf=cl.Buffer(opencl_ctx,mf.WRITE_ONLY,size=out_array.nbytes)
-            
+        
+            #import pdb
+            #pdb.set_trace()
             
             KernEv=kern(queue,YPositions[idx1,idx2].shape,None,
                         load1[idx1,idx2],
@@ -518,19 +552,22 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
                         minload,maxload,
                         c1,c2,c3,c4,
                         c5,side,
+                        limit,
+                        flists_buf,
+                        iord_buf,
                         out_buf,wait_for=(YCopyEv,))
-
+        
             out_event=cl.enqueue_copy(queue,out_array,out_buf,wait_for=(KernEv,),is_blocking=False)
             # err += (integral-CTODValues[idx1,idx2][YPosIdx])**2.0
             queue.flush()
-
+            
             YPos_bufs.append(YPositions_buf)
             CTOD_arrays.append(CTODValues[idx1,idx2])
             out_arrays.append(out_array)
             out_bufs.append(out_buf)
             out_events.append(out_event)
             pass
-
+            
         # Go through list of buffers, waiting for completion
         for pos in range(len(YPos_bufs)):
             YPos_buf=YPos_bufs[pos]
@@ -540,7 +577,7 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
             out_event=out_events[pos]
             
             out_event.wait()
-
+        
             # Error gets sum squared residual added
             err += np.sum((out_array-CTOD_array)**2.0)
             numpos += out_array.shape[0]
@@ -548,11 +585,10 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
             YPos_buf.release()
             out_buf.release()
             #out_event.release()
-            
-            pass
         
-            
+            pass
         pass
+
     err /= numpos
     
     print("full_model_residual: Calculate at params=%s; err=%g" % (str(params),err))
@@ -560,8 +596,7 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
     if full_model_residual_plot is not None:
         plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,err)
         pass
+        
     
-
     
     return err
-

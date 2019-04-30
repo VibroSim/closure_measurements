@@ -23,8 +23,8 @@ static doublereal c_b42 = 1.5;
 /* Subroutine */ int qagse_(E_fp f, real *fp1, real *fp2, real *fp3, real *
 	fp4, real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, 
 	real *b, real *epsabs, real *epsrel, integer *limit, real *result, 
-	real *abserr, integer *neval, integer *ier, real *alist__, real *
-	blist, real *rlist, real *elist, integer *iord, integer *last)
+	real *abserr, integer *neval, integer *ier, __global real *alist__, __global real *
+	blist, __global real *rlist, __global real *elist, __global integer *iord, integer *last)
 {
     /* System generated locals */
     integer i__1, i__2;
@@ -49,7 +49,7 @@ static doublereal c_b42 = 1.5;
     real oflow, uflow;
     logical noext;
     extern /* Subroutine */ int qpsrt_(integer *, integer *, integer *, real *
-	    , real *, integer *, integer *);
+	    , __global real *, __global integer *, integer *);
     extern doublereal r1mach_(const __constant integer *);
     integer iroff1, iroff2, iroff3;
     real res3la[3], error1, error2, rlist2[52];
@@ -1079,7 +1079,7 @@ L100:
 } /* qk21_ */
 
 /* Subroutine */ int qpsrt_(integer *limit, integer *last, integer *maxerr, 
-	real *ermax, real *elist, integer *iord, integer *nrmax)
+	real *ermax, __global real *elist, __global integer *iord, integer *nrmax)
 {
     /* System generated locals */
     integer i__1;

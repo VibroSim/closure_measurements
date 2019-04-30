@@ -18,7 +18,7 @@ def full_model_kernel(sigma,YPosition,c5,tck,side):
         sqrtarg = YPosition-yt
         pass
     else: # right side, position < tip position
-        sqrtarg = yt-Yposition
+        sqrtarg = yt-YPosition
         pass
     
     #sqrtarg[sqrtarg < 0.0] = 0.0
