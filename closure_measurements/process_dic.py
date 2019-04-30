@@ -406,9 +406,11 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     #full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
     #full_model_params=full_model_result.x
 
-    full_model_result = scipy.optimize.minimize(full_model_residual_normalized,seed_param_normalizved,args=args,method="nelder-mead",tol=1e-17)
-    # full_model_result = scipy.optimize.minimize(initial_residual_normalized,seed_param_normalized,args=(Yposvec,load1,load2,side,CTOD,nominal_length,nominal_modulus,nominal_stress),method="SLSQP",options={"eps": 1e-6,"ftol": 1e-7},bounds=((0.0,None),((np.min(Yposvec)-nominal_length)/nominal_length,(np.max(Yposvec)+nominal_length)/nominal_length)))
-
+    # full_model_result = scipy.optimize.minimize(full_model_residual_normalized,seed_param_normalized,args=args,method="nelder-mead",tol=1e-17)
+    full_model_result = scipy.optimize.minimize(full_model_residual_normalized,seed_param_normalized,args=args,method="SLSQP",options={"eps": 1e-6,"ftol": 1e-7},
+                                                #bounds=((0.0,None),((np.min(Yposvec)-nominal_length)/nominal_length,(np.max(Yposvec)+nominal_length)/nominal_length))
+                                                )
+    
     full_model_params_normalized=full_model_result.x
         
 
@@ -420,5 +422,10 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     #full_model_result=None
     #full_model_params = seed_param
 
+    #sys.modules["__main__"].__dict__.update(globals())
+    #sys.modules["__main__"].__dict__.update(locals())
+    #raise ValueError("Break!")
+
+    
     return (minload,maxload,full_model_params,full_model_result)
                      
