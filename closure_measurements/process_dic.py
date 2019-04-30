@@ -198,7 +198,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     return yt
 
 
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,side,doplots=True,opencl_ctx=None,opencl_dev=None):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
@@ -374,16 +374,16 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     
     # Perform model fit
 
-    full_model_residual_unaccel=full_model.full_model_residual
-    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
+    full_model_residual_unaccel_normalized=full_model.full_model_residual_normalized
+    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
     
     if opencl_ctx is None:
-        full_model_residual = full_model_residual_unaccel
+        full_model_residual_normalized = full_model_residual_unaccel_normalized
         args = args_unaccel
         pass
     else:
-        full_model_residual=full_model_accel.full_model_residual_accel
-        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)
+        full_model_residual_normalized=full_model_accel.full_model_residual_accel_normalized
+        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
 
         test_accel=True
         
@@ -392,17 +392,31 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
             # Compare residual output based on seed_param, make sure
             # it matches between unaccelerated and accelerated models
             
-            error_unaccel = full_model_residual_unaccel(seed_param,*args_unaccel)
-            error_accel = full_model_residual(seed_param,*args)
+            error_unaccel = full_model_residual_unaccel_normalized(seed_param,*args_unaccel)
+            error_accel = full_model_residual_normalized(seed_param,*args)
 
             assert( np.abs(error_accel-error_unaccel)/error_unaccel < .001)
             pass
         
         pass
-    
-    full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
-    full_model_params=full_model_result.x
 
+    seed_param_normalized = (c[0]/nominal_length,c[1]/nominal_length,c[2]/nominal_length,c[3]/nominal_length,np.median(c5_vals)*nominal_modulus/np.sqrt(nominal_length))
+
+    
+    #full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
+    #full_model_params=full_model_result.x
+
+    full_model_result = scipy.optimize.minimize(full_model_residual_normalized,seed_param_normalizved,args=args,method="nelder-mead",tol=1e-17)
+    # full_model_result = scipy.optimize.minimize(initial_residual_normalized,seed_param_normalized,args=(Yposvec,load1,load2,side,CTOD,nominal_length,nominal_modulus,nominal_stress),method="SLSQP",options={"eps": 1e-6,"ftol": 1e-7},bounds=((0.0,None),((np.min(Yposvec)-nominal_length)/nominal_length,(np.max(Yposvec)+nominal_length)/nominal_length)))
+
+    full_model_params_normalized=full_model_result.x
+        
+
+    full_model_params = (full_model_params_normalized[0]*nominal_length,
+                         full_model_params_normalized[1]*nominal_length,
+                         full_model_params_normalized[2]*nominal_length,
+                         full_model_params_normalized[3]*nominal_length,
+                         full_model_params_normalized[4]*np.sqrt(nominal_length)/nominal_modulus)
     #full_model_result=None
     #full_model_params = seed_param
 

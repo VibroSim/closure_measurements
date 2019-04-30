@@ -465,6 +465,23 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
 
 
 
+def full_model_residual_accel_normalized(params,YPositions,CTODValues,load1,load2,minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
+    splinecoeff_normalized=params[:4]
+    c5_normalized=params[4]
+
+    params_unnormalized=(splinecoeff_normalized[0]*nominal_length,
+                         splinecoeff_normalized[1]*nominal_length,
+                         splinecoeff_normalized[2]*nominal_length,
+                         splinecoeff_normalized[3]*nominal_length,
+                         c5_normalized*np.sqrt(nominal_length)/nominal_modulus)
+
+    #  unnormalized result is average over all load pairs of (integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma - CTOD)^2... i.e. mean of squared CTODs
+    
+    nominal_ctod = nominal_length*nominal_stress/nominal_modulus
+
+    
+    return full_model_residual_accel(params_unnormalized,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
+    
 
 
 def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev):
