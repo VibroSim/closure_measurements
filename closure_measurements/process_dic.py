@@ -87,7 +87,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
     return CTODs
     
     
-def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
+def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller Y values) or side=2 (larger Y values)"""
     
     InitialModels=np.zeros((nloads,nloads),dtype='O')
@@ -140,16 +140,16 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side,nominal
 
             y0=(np.sqrt(nominal_length)/nominal_modulus,np.mean(YPositions[idx1,idx2]))
             #y0=(1.0e-13,np.mean(YPositions[idx1,idx2]))
-            (c5,yt)=initial_fit.fit_initial_model(y0,YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side,CTODValues[idx1,idx2],nominal_length,nominal_modulus,nominal_stress)
+            (c5,yt)=initial_fit.fit_initial_model(y0,YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],CrackCenterY,Symmetric_COD,side,CTODValues[idx1,idx2],nominal_length,nominal_modulus,nominal_stress)
             print("side=%d; yt=%f" % (side,yt))
-            InitialModels[idx1,idx2]=initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
+            InitialModels[idx1,idx2]=initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],CrackCenterY,Symmetric_COD,side)
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,yt),YPositions,load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
             InitialCoeffs[:,idx1,idx2]=(c5,yt)
             npoints[idx1,idx2]=YPositions[idx1,idx2].shape[0]
             Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels[idx1,idx2])**2.0)/npoints[idx1,idx2]
             #import pdb
             #pdb.set_trace()
-            junk = initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],side)
+            #junk = initial_fit.initial_model((c5,yt),YPositions[idx1,idx2],load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],CrackCenterY,Symmetric_COD,side)
             if doplots:
                 # Do random sub-percentage
                 if np.random.rand() < .05:
@@ -198,17 +198,26 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     return yt
 
 
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
-    # Our model is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
+    # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
     #   where yt is a function of sigma, because the tip location shifts
     #   as the crack opens and closes
+
+    # Our model (symmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) where u(y) is the unit step
+    # This integrates to:
+    #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) dsigma
+    #   where yt is a function of sigma, because the tip location shifts
+    #   as the crack opens and closes
+
     
     # From Suresh, eq. 9.45 @ theta=pi, uy = (K1/(2.0*E))*sqrt((r/(2*pi)))*(1+nu)*(2kappa+1 +1)
     # where kappa = (3-nu)/(1+nu) for plane stress or
     # kappa=(3-4nu) for plane strain... where nu is Poisson's ratio
 
+
+    # In the asymmetric case, 
     # COD=2uy = ((KI/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)  *sqrt(y-yt) 
    # where KI = sigma*sqrt(pi*a)
     # Since this is proportional to sigma, for a fixed length crack
@@ -225,8 +234,14 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     # Use a first cut C5 estimate to filter out any coefficients that
     # optimized to zero for whatever reason
-    min_c5 = np.sqrt(2*50e-6)/1000e9
 
+    if Symmetric_COD:
+        min_c5 = 0.1/1000e9
+        pass
+    else:
+        min_c5 = np.sqrt(2*50e-6)/1000e9
+        pass
+    
     (idx1grid,idx2grid)=np.meshgrid(np.arange(InitialCoeffs.shape[1]),np.arange(InitialCoeffs.shape[2]),indexing="ij")
 
     YPositions_min = np.array( [ np.min(YPosArray) if YPosArray is not None and len(YPosArray) > 0 else np.inf for YPosArray in YPositions.ravel()]).reshape(YPositions.shape)
@@ -375,7 +390,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     # Perform model fit
 
     full_model_residual_unaccel_normalized=full_model.full_model_residual_normalized
-    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
+    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
     
     if opencl_ctx is None:
         full_model_residual_normalized = full_model_residual_unaccel_normalized
@@ -383,7 +398,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         pass
     else:
         full_model_residual_normalized=full_model_accel.full_model_residual_accel_normalized
-        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
+        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
 
         test_accel=True
         
@@ -400,7 +415,18 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         
         pass
 
-    seed_param_normalized = (c[0]/nominal_length,c[1]/nominal_length,c[2]/nominal_length,c[3]/nominal_length,np.median(c5_vals)*nominal_modulus/np.sqrt(nominal_length))
+    if Symmetric_COD:
+        c5_normalized = np.median(c5_vals)*nominal_modulus
+        pass
+    else:
+        c5_normalized = np.median(c5_vals)*nominal_modulus/np.sqrt(nominal_length)
+        pass
+    
+    seed_param_normalized = (c[0]/nominal_length,
+                             c[1]/nominal_length,
+                             c[2]/nominal_length,
+                             c[3]/nominal_length,
+                             c5_normalized)
 
     
     #full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
@@ -412,13 +438,19 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                                                 )
     
     full_model_params_normalized=full_model_result.x
-        
 
+    if Symmetric_COD:
+        c5_unnormalized = full_model_params_normalized[4]/nominal_modulus
+        pass
+    else:
+        c5_unnormalized = full_model_params_normalized[4]*np.sqrt(nominal_length)/nominal_modulus
+        pass
+    
     full_model_params = (full_model_params_normalized[0]*nominal_length,
                          full_model_params_normalized[1]*nominal_length,
                          full_model_params_normalized[2]*nominal_length,
                          full_model_params_normalized[3]*nominal_length,
-                         full_model_params_normalized[4]*np.sqrt(nominal_length)/nominal_modulus)
+                         c5_unnormalized)
     #full_model_result=None
     #full_model_params = seed_param
 
@@ -426,6 +458,28 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     #sys.modules["__main__"].__dict__.update(locals())
     #raise ValueError("Break!")
 
+
+        # Plot diagnostics
+    if doplots:
+        
+        sigmarange=np.linspace(minload,maxload,150)
+        fittedvals=EvalEffectiveTip(minload,maxload,seed_param,sigmarange)
+
+        from matplotlib import pyplot as pl
+
+        pl.figure()
+        pl.plot(yt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
+                yt_vals*1e3,avg_load_vals/1e6,'o',
+                fittedvals*1e3,sigmarange/1e6,'-',
+                full_model.full_model_yt(full_model_params,sigmarange,minload,maxload)*1e3,sigmarange/1.e6,'-')
+        pl.ylabel('Load (MPa)')
+        pl.xlabel('Tip position (mm)')
+        pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
+        pl.title('yt')
+        pl.grid()
+
+
+    
     
     return (minload,maxload,full_model_params,full_model_result)
                      

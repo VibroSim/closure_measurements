@@ -1,5 +1,6 @@
 c     This software in public domain because it was part of SLATEC
       subroutine qagse(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *                 ip1,fp10,
      *                 a,b,epsabs,epsrel,limit,result,abserr,
      * neval, ier,alist,blist,rlist,elist,iord,last)
 c***begin prologue  qagse
@@ -36,6 +37,8 @@ c            fp6    - real  parameter #6 for f
 c            fp7    - real  parameter #7 for f
 c            fp8    - real  parameter #8 for f
 c            fp9    - real  parameter #9 for f
+c            ip1    - integer parameter #1 for f
+c            fp10    - real  parameter #10 for f
 c
 c            a      - real
 c                     lower limit of integration
@@ -160,11 +163,11 @@ c
       real a,abseps,abserr,alist,area,area1,area12,area2,a1,
      *  a2,b,blist,b1,b2,correc,defabs,defab1,defab2,r1mach,
      *     dres,elist,epmach,epsabs,epsrel,erlarg,erlast,errbnd,fp1,fp2,
-     *  fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *  fp3,fp4,fp5,fp6,fp7,fp8,fp9,fp10,
      *  errmax,error1,error2,erro12,errsum,ertest,f,oflow,resabs,
      *  reseps,result,res3la,rlist,rlist2,small,uflow
       integer id,ier,ierro,iord,iroff1,iroff2,iroff3,jupbnd,k,ksgn,
-     *  ktmin,last,limit,maxerr,neval,nres,nrmax,numrl2
+     *  ktmin,last,limit,maxerr,neval,nres,nrmax,numrl2,ip1
       logical extrap,noext
 c
       dimension alist(limit),blist(limit),elist(limit),iord(limit),
@@ -249,7 +252,7 @@ c
       uflow = r1mach(1)
       oflow = r1mach(2)
       ierro = 0
-      call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9, 
+      call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,ip1,fp10, 
      *           a,b,result,abserr,defabs,resabs)
 c
 c           test on accuracy.
@@ -300,9 +303,9 @@ c
         a2 = b1
         b2 = blist(maxerr)
         erlast = errmax
-        call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+        call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,ip1,fp10,
      *            a1,b1,area1,error1,resabs,defab1)
-        call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+        call qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,ip1,fp10,
      *            a2,b2,area2,error2,resabs,defab2)
 c
 c           improve previous approximations to integral
@@ -645,7 +648,7 @@ c
   100 abserr = amax1(abserr,0.5e+01*epmach*abs(result))
       return
       end
-      subroutine qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+      subroutine qk21(f,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,ip1,fp10,
      *                a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk21
 c***date written   800101   (yymmdd)
@@ -699,10 +702,10 @@ c***routines called  r1mach
 c***end prologue  qk21
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *  fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,fp10,
      *  fv1,fv2,hlgth,resabs,resg,resk,reskh,result,r1mach,uflow,wg,wgk,
      *  xgk
-      integer j,jtw,jtwm1
+      integer j,jtw,jtwm1,ip1
       external f
 c
       dimension fv1(10),fv2(10),wg(5),wgk(11),xgk(11)
@@ -776,14 +779,16 @@ c           compute the 21-point kronrod approximation to
 c           the integral, and estimate the absolute error.
 c
       resg = 0.0e+00
-      fc = funct(centr,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9)
+      fc = funct(centr,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,ip1,fp10)
       resk = wgk(11)*fc
       resabs = abs(resk)
       do 10 j=1,5
         jtw = 2*j
         absc = hlgth*xgk(jtw)
-        fval1 = funct(centr-absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9)
-        fval2 = funct(centr+absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9)
+        fval1 = funct(centr-absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *                ip1,fp10)
+        fval2 = funct(centr+absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *                ip1,fp10)
         fv1(jtw) = fval1
         fv2(jtw) = fval2
         fsum = fval1+fval2
@@ -794,8 +799,10 @@ c
       do 15 j = 1,5
         jtwm1 = 2*j-1
         absc = hlgth*xgk(jtwm1)
-        fval1 = funct(centr-absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9)
-        fval2 = funct(centr+absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9)
+        fval1 = funct(centr-absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *                ip1,fp10)
+        fval2 = funct(centr+absc,fp1,fp2,fp3,fp4,fp5,fp6,fp7,fp8,fp9,
+     *                ip1,fp10)
         fv1(jtwm1) = fval1
         fv2(jtwm1) = fval2
         fsum = fval1+fval2

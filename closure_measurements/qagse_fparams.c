@@ -21,10 +21,11 @@ static doublereal c_b42 = 1.5;
 
 /*     This software in public domain because it was part of SLATEC */
 /* Subroutine */ int qagse_(E_fp f, real *fp1, real *fp2, real *fp3, real *
-	fp4, real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, 
-	real *b, real *epsabs, real *epsrel, integer *limit, real *result, 
-	real *abserr, integer *neval, integer *ier, __global real *alist__, __global real *
-	blist, __global real *rlist, __global real *elist, __global integer *iord, integer *last)
+	fp4, real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, integer *
+	ip1, real *fp10, real *a, real *b, real *epsabs, real *epsrel, 
+	integer *limit, real *result, real *abserr, integer *neval, integer *
+	ier, __global real *alist__, __global real *blist, __global real *rlist, __global real *elist, __global integer *
+	iord, integer *last)
 {
     /* System generated locals */
     integer i__1, i__2;
@@ -35,8 +36,8 @@ static doublereal c_b42 = 1.5;
     real a1, a2, b1, b2;
     integer id;
     extern /* Subroutine */ int qk21_(E_fp, real *, real *, real *, real *, 
-	    real *, real *, real *, real *, real *, real *, real *, real *, 
-	    real *, real *, real *);
+	    real *, real *, real *, real *, real *, integer *, real *, real *,
+	     real *, real *, real *, real *, real *);
     real area;
     extern /* Subroutine */ int qelg_(integer *, real *, real *, real *, real 
 	    *, integer *);
@@ -96,6 +97,8 @@ static doublereal c_b42 = 1.5;
 /*            fp7    - real  parameter #7 for f */
 /*            fp8    - real  parameter #8 for f */
 /*            fp9    - real  parameter #9 for f */
+/*            ip1    - integer parameter #1 for f */
+/*            fp10    - real  parameter #10 for f */
 
 /*            a      - real */
 /*                     lower limit of integration */
@@ -310,8 +313,8 @@ static doublereal c_b42 = 1.5;
     uflow = r1mach_(&c__1);
     oflow = r1mach_(&c__2);
     ierro = 0;
-    qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, a, b, result, 
-	    abserr, &defabs, &resabs);
+    qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, ip1, fp10, a, 
+	    b, result, abserr, &defabs, &resabs);
 
 /*           test on accuracy. */
 
@@ -371,10 +374,10 @@ static doublereal c_b42 = 1.5;
 	a2 = b1;
 	b2 = blist[maxerr];
 	erlast = errmax;
-	qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, &a1, &b1, 
-		&area1, &error1, &resabs, &defab1);
-	qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, &a2, &b2, 
-		&area2, &error2, &resabs, &defab2);
+	qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, ip1, fp10,
+		 &a1, &b1, &area1, &error1, &resabs, &defab1);
+	qk21_((E_fp)f, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, ip1, fp10,
+		 &a2, &b2, &area2, &error2, &resabs, &defab2);
 
 /*           improve previous approximations to integral */
 /*           and error and test for accuracy. */
@@ -880,6 +883,9 @@ L100:
     return 0;
 } /* qelg_ */
 
+
+    /* Initialized data */
+
     const __constant real xgk[11] = { .9956571630258081f,.9739065285171717f,
 	    .9301574913557082f,.8650633666889845f,.7808177265864169f,
 	    .6794095682990244f,.5627571346686047f,.4333953941292472f,
@@ -891,13 +897,11 @@ L100:
     const __constant real wg[5] = { .06667134430868814f,.1494513491505806f,
 	    .219086362515982f,.2692667193099964f,.2955242247147529f };
 
-
 /* Subroutine */ int qk21_(E_fp f, real *fp1, real *fp2, real *fp3, real *fp4,
-	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, real 
-	*b, real *result, real *abserr, real *resabs, real *resasc)
+	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, integer *ip1, 
+	real *fp10, real *a, real *b, real *result, real *abserr, real *
+	resabs, real *resasc)
 {
-    /* Initialized data */
-
 
     /* System generated locals */
     real r__1, r__2;
@@ -914,7 +918,7 @@ L100:
     integer jtwm1;
     real hlgth, centr, reskh;
     extern doublereal funct_(real *, real *, real *, real *, real *, real *, 
-	    real *, real *, real *, real *);
+	    real *, real *, real *, real *, integer *, real *);
     real uflow;
     extern doublereal r1mach_(const __constant integer *);
     real epmach, dhlgth;
@@ -1021,16 +1025,19 @@ L100:
 /*           the integral, and estimate the absolute error. */
 
     resg = 0.f;
-    fc = funct_(&centr, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9);
+    fc = funct_(&centr, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, ip1, 
+	    fp10);
     resk = wgk[10] * fc;
     *resabs = dabs(resk);
     for (j = 1; j <= 5; ++j) {
 	jtw = j << 1;
 	absc = hlgth * xgk[jtw - 1];
 	r__1 = centr - absc;
-	fval1 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9);
+	fval1 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, 
+		ip1, fp10);
 	r__1 = centr + absc;
-	fval2 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9);
+	fval2 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, 
+		ip1, fp10);
 	fv1[jtw - 1] = fval1;
 	fv2[jtw - 1] = fval2;
 	fsum = fval1 + fval2;
@@ -1043,9 +1050,11 @@ L100:
 	jtwm1 = (j << 1) - 1;
 	absc = hlgth * xgk[jtwm1 - 1];
 	r__1 = centr - absc;
-	fval1 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9);
+	fval1 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, 
+		ip1, fp10);
 	r__1 = centr + absc;
-	fval2 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9);
+	fval2 = funct_(&r__1, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, fp9, 
+		ip1, fp10);
 	fv1[jtwm1 - 1] = fval1;
 	fv2[jtwm1 - 1] = fval2;
 	fsum = fval1 + fval2;

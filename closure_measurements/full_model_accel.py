@@ -241,12 +241,12 @@ doublereal full_model_kernel(float *sigma,
                              float *YPosition, 
                              float *minload,float *maxload, 
                              float *c1,float *c2, float *c3, float *c4, 
-                             float *c5,float *side)
+                             float *c5,float *CrackCenterY,int *Symmetric_COD,float *side)
 {
   float t[8];
   float B14,B24,B34,B44;
   float yt; 
-  float sqrtarg;
+  float sqrtarg,sqrtarg2;
   
   t[0]=t[1]=t[2]=t[3]=*minload;
   t[4]=t[5]=t[6]=t[7]=*maxload;
@@ -268,7 +268,21 @@ doublereal full_model_kernel(float *sigma,
     sqrtarg=0.0;
   }
 
-  return (*c5)*sqrt(sqrtarg);
+  if (*Symmetric_COD) {
+    if (*side < 1.5) { // left side
+      sqrtarg2 = 2*(*CrackCenterY) - yt - (*YPosition);
+    } else {
+      sqrtarg2 = (*YPosition) - 2*(*CrackCenterY) + yt;
+    }
+    if (sqrtarg2 < 0.0) {
+      sqrtarg2=0.0;
+    }
+    
+    return (*c5)*sqrt(sqrtarg)*sqrt(sqrtarg2);
+  } else {
+
+    return (*c5)*sqrt(sqrtarg);
+  }
 }
 
 
@@ -278,6 +292,8 @@ __kernel void integrate_full_model_kernel(float load1,
                                           float minload,float maxload,
                                           float c1,float c2, float c3, float c4,
                                           float c5,
+                                          float CrackCenterY, 
+                                          int Symmetric_COD,
                                           float side,  // positive 1: RHS, negative 1: LHS
                                           int limit,
                                           __global float *flists,
@@ -314,6 +330,8 @@ __kernel void integrate_full_model_kernel(float load1,
   qagse_sigmaintegral(NULL,
                                &YPosition,&minload,&maxload, // this start/end are the bounds of the splines
                                &c1,&c2,&c3,&c4,&c5,
+                               &CrackCenterY,
+                               &Symmetric_COD,
                                &side,
                                &load1,&load2, // this start/end are the bounds of the integration
                                &epsabs,&epsrel,
@@ -357,17 +375,20 @@ def get_kernelprog(ctx):
     
 
 
-def full_model_kernel(sigma,YPosition,c5,tck,side):
+def full_model_kernel(sigma,YPosition,c5,tck,CrackCenterY,Symmetric_COD,side):
     """This is the integrand of: 
-          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
+          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma (asymmetric COD case)
+    or 
+          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) dsigma (symmetric COD case)
+
         where yt is a function of sigma given by the spline
-        coefficents tck
+        coefficents tck and yc is the coordinate of the crack center
         """
     yt = scipy.interpolate.splev(sigma,tck)
-    if side < 1.5:
+    if side < 1.5: # left side, position > tip posiiton
         sqrtarg = YPosition-yt
         pass
-    else:
+    else: # right side, position < tip position
         sqrtarg = yt-YPosition
         pass
     
@@ -375,12 +396,31 @@ def full_model_kernel(sigma,YPosition,c5,tck,side):
     if sqrtarg < 0.0:
         sqrtarg=0.0
         pass
-    
-    modelvals = c5*np.sqrt(sqrtarg)
+
+    if Symmetric_COD:
+        if side==1:
+            sqrtarg2 = 2*CrackCenterY-yt-YPosition
+            pass
+        else:
+            sqrtarg2 = YPosition-2*CrackCenterY+yt
+            pass
+        if sqrtarg2 < 0.0:
+            sqrtarg2=0.0
+            pass
+        
+        modelvals = c5*np.sqrt(sqrtarg)*np.sqrt(sqrtarg2)
+        # c5 has units of meters of COD per length per Pascal of load
+
+        pass
+    else:        
+        # c5 has units of meters of COD per sqrt(length) per Pascal of load
+        modelvals = c5*np.sqrt(sqrtarg)
+        pass
     return modelvals
 
 
-def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,err):
+
+def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,err):
     from matplotlib import pyplot as pl
 
     splinecoeff=params[:4]
@@ -433,7 +473,7 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
             #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
             #InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
 
-            integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(YPosition,c5,tck,side))[0]  for YPosition in YPositionsSorted ],dtype='d')
+            integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(YPosition,c5,tck,CrackCenterY,Symmetric_COD,side))[0]  for YPosition in YPositionsSorted ],dtype='d')
 
             pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
                     YPositionsSorted*1e3,integralvals*1e6,'-')
@@ -465,26 +505,35 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
 
 
 
-def full_model_residual_accel_normalized(params,YPositions,CTODValues,load1,load2,minload,maxload,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel_normalized(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
     splinecoeff_normalized=params[:4]
     c5_normalized=params[4]
+
+    if Symmetric_COD:
+        # c5 has units of meters of COD per length per Pascal of load
+        c5 = c5_normalized/nominal_modulus
+        pass
+    else:
+        # c5 has units of meters of COD per sqrt(length) per Pascal of load
+        c5 = c5_normalized*np.sqrt(nominal_length)/nominal_modulus
+        pass
 
     params_unnormalized=(splinecoeff_normalized[0]*nominal_length,
                          splinecoeff_normalized[1]*nominal_length,
                          splinecoeff_normalized[2]*nominal_length,
                          splinecoeff_normalized[3]*nominal_length,
-                         c5_normalized*np.sqrt(nominal_length)/nominal_modulus)
+                         c5)
 
     #  unnormalized result is average over all load pairs of (integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma - CTOD)^2... i.e. mean of squared CTODs
     
     nominal_ctod = nominal_length*nominal_stress/nominal_modulus
 
     
-    return full_model_residual_accel(params_unnormalized,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
+    return full_model_residual_accel(params_unnormalized,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
     
 
 
-def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev):
 
 
     import pyopencl as cl
@@ -541,6 +590,8 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
                                         np.float32,
                                         np.float32,
                                         np.int32,
+                                        np.float32,
+                                        np.int32,
                                         None,
                                         None,
                                     None])
@@ -568,7 +619,10 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
                         YPositions_buf,
                         minload,maxload,
                         c1,c2,c3,c4,
-                        c5,side,
+                        c5,
+                        CrackCenterY,
+                        int(Symmetric_COD),
+                        side,
                         limit,
                         flists_buf,
                         iord_buf,
@@ -611,7 +665,7 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
     print("full_model_residual: Calculate at params=%s; err=%g" % (str(params),err))
 
     if full_model_residual_plot is not None:
-        plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,side,full_model_residual_plot,err)
+        plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,err)
         pass
         
     

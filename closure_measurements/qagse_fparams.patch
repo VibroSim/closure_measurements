@@ -1,5 +1,5 @@
---- ./qagse_fparams.c.orig	2019-04-30 02:19:38.865966172 -0500
-+++ ./qagse_fparams.c	2019-04-30 01:46:04.371101457 -0500
+--- qagse_fparams.c.orig	2019-04-30 15:32:25.189871463 -0500
++++ qagse_fparams.c	2019-04-30 15:36:11.562868333 -0500
 @@ -10,7 +10,7 @@
  		http://www.netlib.org/f2c/libf2c.zip
  */
@@ -9,18 +9,16 @@
  
  /* Table of constant values */
  
-@@ -23,8 +23,8 @@
- /* Subroutine */ int qagse_(E_fp f, real *fp1, real *fp2, real *fp3, real *
- 	fp4, real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, 
- 	real *b, real *epsabs, real *epsrel, integer *limit, real *result, 
--	real *abserr, integer *neval, integer *ier, real *alist__, real *
--	blist, real *rlist, real *elist, integer *iord, integer *last)
-+	real *abserr, integer *neval, integer *ier, __global real *alist__, __global real *
-+	blist, __global real *rlist, __global real *elist, __global integer *iord, integer *last)
+@@ -24,7 +24,7 @@
+ 	fp4, real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, integer *
+ 	ip1, real *fp10, real *a, real *b, real *epsabs, real *epsrel, 
+ 	integer *limit, real *result, real *abserr, integer *neval, integer *
+-	ier, real *alist__, real *blist, real *rlist, real *elist, integer *
++	ier, __global real *alist__, __global real *blist, __global real *rlist, __global real *elist, __global integer *
+ 	iord, integer *last)
  {
      /* System generated locals */
-     integer i__1, i__2;
-@@ -49,8 +49,8 @@
+@@ -50,8 +50,8 @@
      real oflow, uflow;
      logical noext;
      extern /* Subroutine */ int qpsrt_(integer *, integer *, integer *, real *
@@ -31,7 +29,7 @@
      integer iroff1, iroff2, iroff3;
      real res3la[3], error1, error2, rlist2[52];
      integer numrl2;
-@@ -329,7 +329,7 @@
+@@ -332,7 +332,7 @@
      if (*limit == 1) {
  	*ier = 1;
      }
@@ -40,7 +38,7 @@
  	     {
  	goto L140;
      }
-@@ -652,7 +652,7 @@
+@@ -655,7 +655,7 @@
      real err1, err2, err3, tol1, tol2, tol3;
      integer indx;
      real e1abs, oflow, error, delta1, delta2, delta3;
@@ -49,16 +47,18 @@
      real epmach, epsinf;
      integer newelm, limexp;
  
-@@ -880,29 +880,31 @@
+@@ -883,30 +883,32 @@
      return 0;
  } /* qelg_ */
  
 -/* Subroutine */ int qk21_(E_fp f, real *fp1, real *fp2, real *fp3, real *fp4,
--	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, real 
--	*b, real *result, real *abserr, real *resabs, real *resasc)
+-	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, integer *ip1, 
+-	real *fp10, real *a, real *b, real *result, real *abserr, real *
+-	resabs, real *resasc)
 -{
--    /* Initialized data */
--
++
+     /* Initialized data */
+ 
 -    static real xgk[11] = { .9956571630258081f,.9739065285171717f,
 +    const __constant real xgk[11] = { .9956571630258081f,.9739065285171717f,
  	    .9301574913557082f,.8650633666889845f,.7808177265864169f,
@@ -73,13 +73,11 @@
 +    const __constant real wg[5] = { .06667134430868814f,.1494513491505806f,
  	    .219086362515982f,.2692667193099964f,.2955242247147529f };
  
-+
 +/* Subroutine */ int qk21_(E_fp f, real *fp1, real *fp2, real *fp3, real *fp4,
-+	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, real *a, real 
-+	*b, real *result, real *abserr, real *resabs, real *resasc)
++	 real *fp5, real *fp6, real *fp7, real *fp8, real *fp9, integer *ip1, 
++	real *fp10, real *a, real *b, real *result, real *abserr, real *
++	resabs, real *resasc)
 +{
-+    /* Initialized data */
-+
 +
      /* System generated locals */
      real r__1, r__2;
@@ -91,16 +89,16 @@
  
      /* Local variables */
      integer j;
-@@ -914,7 +916,7 @@
+@@ -918,7 +920,7 @@
      extern doublereal funct_(real *, real *, real *, real *, real *, real *, 
- 	    real *, real *, real *, real *);
+ 	    real *, real *, real *, real *, integer *, real *);
      real uflow;
 -    extern doublereal r1mach_(integer *);
 +    extern doublereal r1mach_(const __constant integer *);
      real epmach, dhlgth;
  
  /* ***begin prologue  qk21 */
-@@ -1077,7 +1079,7 @@
+@@ -1086,7 +1088,7 @@
  } /* qk21_ */
  
  /* Subroutine */ int qpsrt_(integer *limit, integer *last, integer *maxerr, 
