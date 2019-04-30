@@ -198,7 +198,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     return yt
 
 
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,side,doplots=True,opencl_ctx=None,opencl_dev=None):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,side,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
@@ -228,10 +228,33 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     min_c5 = np.sqrt(2*50e-6)/1000e9
 
     (idx1grid,idx2grid)=np.meshgrid(np.arange(InitialCoeffs.shape[1]),np.arange(InitialCoeffs.shape[2]),indexing="ij")
+
+    YPositions_min = np.array( [ np.min(YPosArray) if YPosArray is not None and len(YPosArray) > 0 else np.inf for YPosArray in YPositions.ravel()]).reshape(YPositions.shape)
+    YPositions_max = np.array( [ np.max(YPosArray) if YPosArray is not None and len(YPosArray) > 0 else -np.inf for YPosArray in YPositions.ravel()]).reshape(YPositions.shape)
+
+
+    Signal = np.array( [ np.mean(InitialModelArray) if InitialModelArray is not None else 0.0 for InitialModelArray in InitialModels.ravel() ]).reshape(YPositions.shape)
+
+    
+
+
+    Noise = np.zeros(YPositions.shape,dtype='d')
+    SNR = -np.ones(YPositions.shape,dtype='d') * np.inf
+    for id1 in range(YPositions.shape[0]):
+        for id2 in range(YPositions.shape[1]):
+            if CTODValues[id1,id2] is None or InitialModels[id1,id2] is None:
+                continue
+            Noise[id1,id2] = np.sqrt(np.mean((InitialModels[id1,id2]-CTODValues[id1,id2])**2.0)) 
+            SNR[id1,id2] = Signal[id1,id2]/Noise[id1,id2]
+            pass
+        pass
     
     
     # Unwrap the error and yt coefficients
     valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
+    
+    # Use only data points for which yt is inside data range for initial fit and with good SNR
+    for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= YPositions_min.ravel()) &  ( InitialCoeffs[1,:,:].ravel() <= YPositions_max.ravel()) & (SNR.ravel() > 1.0)
     
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
@@ -243,15 +266,22 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     
     avg_load=(load1+load2).mean(axis=2)/2.0
     avg_load_unwrapped=avg_load.ravel()[valid]
-    
+
     # Now sort them so lowest error comes first
     errsort=np.argsort(Error_unwrapped)
-
-    # Do fit to first 50
-    yt_vals = yt_unwrapped[errsort[:50]]
-    avg_load_vals=avg_load_unwrapped[errsort[:50]]
-    c5_vals = c5_unwrapped[errsort[:50]]
     
+    #raise ValueError("Break")
+    ## Do fit to first 50
+    #yt_vals = yt_unwrapped[errsort[:50]]
+    #avg_load_vals=avg_load_unwrapped[errsort[:50]]
+    #c5_vals = c5_unwrapped[errsort[:50]]
+    
+    yt_vals = InitialCoeffs[1,:,:].ravel()[for_initial_fit]
+    avg_load_vals = avg_load.ravel()[for_initial_fit]
+    c5_vals = InitialCoeffs[0,:,:].ravel()[for_initial_fit]
+
+    
+
 
     avg_load_vals_sort=np.argsort(avg_load_vals)
     avg_load_vals_sorted=avg_load_vals[avg_load_vals_sort]
@@ -269,7 +299,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     assert((c[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
     assert(k==3)
-    seed_param=(c[0],c[1],c[2],c[3],c5)
+    seed_param=(c[0],c[1],c[2],c[3],np.median(c5_vals))
     
     # Plot diagnostics
     if doplots:
@@ -285,7 +315,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                 fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','Best 50','Fit to best 50'))
+        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
         pl.title('yt')
         pl.grid()
 
@@ -303,7 +333,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
             xdata=thisline.get_xdata()
             ydata=thisline.get_ydata()
             indices = event.ind
-            print("got indices: %s" % (str(indices)))
+            print("got indices: %s; side=%d; YPositions[0,1][0]=%f" % (str(indices),side,YPositions[0,1][0]))
 
             for index in indices:
                 pl.figure()
@@ -344,7 +374,6 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     
     # Perform model fit
 
-    """  full model calculation temporarily commented out
     if opencl_ctx is None:
         full_model_residual=full_model.full_model_residual
         args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot)
@@ -352,12 +381,13 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     else:
         full_model_residual=full_model_accel.full_model_residual_accel
         args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,side,full_model_residual_plot,opencl_ctx,opencl_dev)
-
+        pass
+    
     full_model_result = scipy.optimize.minimize(full_model_residual,seed_param,args=args,method="nelder-mead",tol=1e-17)
     full_model_params=full_model_result.x
-    """
-    full_model_result=None
-    full_model_params = seed_param
+
+    #full_model_result=None
+    #full_model_params = seed_param
 
     return (minload,maxload,full_model_params,full_model_result)
                      

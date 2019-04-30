@@ -13,9 +13,12 @@ from closure_measurements.process_dic import CalcFullModel as CalcFullModel_func
 
 import pyopencl as cl
 
-Calc_CTODs=scriptify(calc_CTODs_function)
-CalcInitialModel=scriptify(CalcInitialModel_function)
-CalcFullModel=scriptify(CalcFullModel_function)
+#Calc_CTODs=scriptify(calc_CTODs_function)
+#CalcInitialModel=scriptify(CalcInitialModel_function)
+#CalcFullModel=scriptify(CalcFullModel_function)
+Calc_CTODs=calc_CTODs_function
+CalcInitialModel=CalcInitialModel_function
+CalcFullModel=CalcFullModel_function
 
 
 # Probably want to run view_dic_input on the same data file
@@ -61,9 +64,9 @@ if __name__=="__main__":
      YPositions_side2,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
-    (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,side=1,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
+    (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,side=1,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
-    (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,side=2,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
+    (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,side=2,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
 
     
