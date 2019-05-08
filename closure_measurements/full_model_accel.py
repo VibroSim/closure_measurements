@@ -505,7 +505,7 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
 
 
 
-def full_model_residual_accel_normalized(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel_normalized(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
     splinecoeff_normalized=params[:4]
     c5_normalized=params[4]
 
@@ -529,11 +529,11 @@ def full_model_residual_accel_normalized(params,YPositions,CTODValues,load1,load
     nominal_ctod = nominal_length*nominal_stress/nominal_modulus
 
     
-    return full_model_residual_accel(params_unnormalized,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
+    return full_model_residual_accel(params_unnormalized,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
     
 
 
-def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev):
 
 
     import pyopencl as cl
@@ -573,6 +573,23 @@ def full_model_residual_accel(params,YPositions,CTODValues,load1,load2,minload,m
             # Calculate the model value over the
             # various Y positions:
             #  integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
+
+            # Use a first cut C5 estimate to filter out any coefficients that
+            # optimized to zero for whatever reason
+            
+            if Symmetric_COD:
+                min_c5 = 0.1/1000e9
+                pass
+            else:
+                min_c5 = np.sqrt(2*50e-6)/1000e9
+                pass
+
+            
+            if np.isnan(InitialCoeffs[1,idx1,idx2]) or YPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
+                # Consider these data not valid. Discard
+                continue
+
+            
             assert(len(YPositions[idx1,idx2].shape)==1)
             
             if YPositions[idx1,idx2].shape[0]==0:

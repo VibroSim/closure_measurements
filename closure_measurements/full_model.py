@@ -64,7 +64,7 @@ def full_model_kernel(sigma,YPosition,c5,tck,CrackCenterY,Symmetric_COD,side):
     return modelvals
 
 
-def full_model_residual_normalized(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot):
+def full_model_residual_normalized(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot):
     splinecoeff_normalized=params[:4]
     c5_normalized=params[4]
 
@@ -88,10 +88,10 @@ def full_model_residual_normalized(params,YPositions,CTODValues,load1,load2,minl
     nominal_ctod = nominal_length*nominal_stress/nominal_modulus
 
     
-    return full_model_residual(params_unnormalized,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot)/(nominal_ctod**2.0)
+    return full_model_residual(params_unnormalized,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot)/(nominal_ctod**2.0)
     
     
-def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot):
+def full_model_residual(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot):
 
     splinecoeff=params[:4]
     c5=params[4]
@@ -114,6 +114,20 @@ def full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload
             # Calculate the model value over the
             # various Y positions:
             #  integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
+            # Use a first cut C5 estimate to filter out any coefficients that
+            # optimized to zero for whatever reason
+            
+            if Symmetric_COD:
+                min_c5 = 0.1/1000e9
+                pass
+            else:
+                min_c5 = np.sqrt(2*50e-6)/1000e9
+                pass
+
+            
+            if np.isnan(InitialCoeffs[1,idx1,idx2]) or YPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
+                # Consider these data not valid. Discard
+                continue
             
             for YPosIdx in range(len(YPositions[idx1,idx2])):
                 # Evaluate integral at this Y position

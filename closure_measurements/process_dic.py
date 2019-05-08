@@ -282,8 +282,8 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     avg_load=(load1+load2).mean(axis=2)/2.0
     avg_load_unwrapped=avg_load.ravel()[valid]
 
-    # Now sort them so lowest error comes first
-    errsort=np.argsort(Error_unwrapped)
+    ## Now sort them so lowest error comes first
+    #errsort=np.argsort(Error_unwrapped)
     
     #raise ValueError("Break")
     ## Do fit to first 50
@@ -390,7 +390,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
     # Perform model fit
 
     full_model_residual_unaccel_normalized=full_model.full_model_residual_normalized
-    args_unaccel=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
+    args_unaccel=(InitialCoeffs,YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
     
     if opencl_ctx is None:
         full_model_residual_normalized = full_model_residual_unaccel_normalized
@@ -398,7 +398,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         pass
     else:
         full_model_residual_normalized=full_model_accel.full_model_residual_accel_normalized
-        args=(YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
+        args=(InitialCoeffs,YPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
 
         test_accel=True
         
