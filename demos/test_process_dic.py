@@ -9,6 +9,7 @@ from function_as_script import scriptify
 from closure_measurements.process_dic import load_dgs
 from closure_measurements.process_dic import Calc_CTODs as calc_CTODs_function
 from closure_measurements.process_dic import CalcInitialModel as CalcInitialModel_function
+from closure_measurements.process_dic import InitializeFullModel as InitializeFullModel_function
 from closure_measurements.process_dic import CalcFullModel as CalcFullModel_function
 
 import pyopencl as cl
@@ -18,6 +19,7 @@ import pyopencl as cl
 #CalcFullModel=scriptify(CalcFullModel_function)
 Calc_CTODs=calc_CTODs_function
 CalcInitialModel=CalcInitialModel_function
+InitializeFullModel=InitializeFullModel_function
 CalcFullModel=CalcFullModel_function
 
 
@@ -67,9 +69,17 @@ if __name__=="__main__":
      YPositions_side2,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
-    (minload,maxload,full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
+    
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,doplots=True)
 
-    (minload,maxload,full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,doplots=True)
+
+    
+    
+    (full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
+
+
+    (full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
 
     

@@ -197,43 +197,12 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     yt = scipy.interpolate.splev(sigma,tck)
     return yt
 
-
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
-    # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
-    # This integrates to:
-    #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
-    #   where yt is a function of sigma, because the tip location shifts
-    #   as the crack opens and closes
-
-    # Our model (symmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) where u(y) is the unit step
-    # This integrates to:
-    #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) dsigma
-    #   where yt is a function of sigma, because the tip location shifts
-    #   as the crack opens and closes
-
-    
-    # From Suresh, eq. 9.45 @ theta=pi, uy = (K1/(2.0*E))*sqrt((r/(2*pi)))*(1+nu)*(2kappa+1 +1)
-    # where kappa = (3-nu)/(1+nu) for plane stress or
-    # kappa=(3-4nu) for plane strain... where nu is Poisson's ratio
-
-
-    # In the asymmetric case, 
-    # COD=2uy = ((KI/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)  *sqrt(y-yt) 
-   # where KI = sigma*sqrt(pi*a)
-    # Since this is proportional to sigma, for a fixed length crack
-    # Our C5 is expected to equal sqrt(pi*a)*((1/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)
-    # or C5=(sqrt(2a)/(E))*(1+nu)*(kappa+1)
+def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,doplots=True):
+    # Perform fit to the results of the Initial models,
+    # to seed the full model:
     #
-    # In our "initial" model we use data from a single pair of loads,
-    # assuming the crack tip position yt is fixed. The corresponding
-    # delta sigma is the difference of the loads. The corresponding
-    # sigma is the average of the two loads. 
-    #
-    # In our full model we use all data from all load pairs instead.
-    # The initial model seeds a spline fit for yt(sigma)
-
-    # Use a first cut C5 estimate to filter out any coefficients that
-    # optimized to zero for whatever reason
+    # NOTE: Actual execution of the full model is no longer done.
+    # We just use the result from this initialization
 
     if Symmetric_COD:
         min_c5 = 0.1/1000e9
@@ -380,6 +349,49 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         pass
 
 
+    return (minload,maxload,seed_param)
+    
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
+    # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt) where u(y) is the unit step
+    # This integrates to:
+    #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
+    #   where yt is a function of sigma, because the tip location shifts
+    #   as the crack opens and closes
+
+    # Our model (symmetric case) is dCOD/dsigma = C5*sqrt(y-yt)u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) where u(y) is the unit step
+    # This integrates to:
+    #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) dsigma
+    #   where yt is a function of sigma, because the tip location shifts
+    #   as the crack opens and closes
+
+    
+    # From Suresh, eq. 9.45 @ theta=pi, uy = (K1/(2.0*E))*sqrt((r/(2*pi)))*(1+nu)*(2kappa+1 +1)
+    # where kappa = (3-nu)/(1+nu) for plane stress or
+    # kappa=(3-4nu) for plane strain... where nu is Poisson's ratio
+
+
+    # In the asymmetric case, 
+    # COD=2uy = ((KI/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)  *sqrt(y-yt) 
+   # where KI = sigma*sqrt(pi*a)
+    # Since this is proportional to sigma, for a fixed length crack
+    # Our C5 is expected to equal sqrt(pi*a)*((1/E)/sqrt(2*pi))*(1+nu)*(2kappa+2)
+    # or C5=(sqrt(2a)/(E))*(1+nu)*(kappa+1)
+    #
+    # In our "initial" model we use data from a single pair of loads,
+    # assuming the crack tip position yt is fixed. The corresponding
+    # delta sigma is the difference of the loads. The corresponding
+    # sigma is the average of the two loads. 
+    #
+    # In our full model we use all data from all load pairs instead.
+    # The initial model seeds a spline fit for yt(sigma)
+
+    # Use a first cut C5 estimate to filter out any coefficients that
+    # optimized to zero for whatever reason
+
+    c=np.zeros(4,dtype='d')
+    (c[0],c[1],c[2],c[3],c5_median) = seed_param
+    
+
     full_model_residual_plot=None
 
     if doplots:
@@ -416,10 +428,10 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
         pass
 
     if Symmetric_COD:
-        c5_normalized = np.median(c5_vals)*nominal_modulus
+        c5_normalized = c5_median*nominal_modulus
         pass
     else:
-        c5_normalized = np.median(c5_vals)*nominal_modulus/np.sqrt(nominal_length)
+        c5_normalized = c5_median*nominal_modulus/np.sqrt(nominal_length)
         pass
     
     seed_param_normalized = (c[0]/nominal_length,
@@ -481,5 +493,5 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
 
     
     
-    return (minload,maxload,full_model_params,full_model_result)
+    return (full_model_params,full_model_result)
                      

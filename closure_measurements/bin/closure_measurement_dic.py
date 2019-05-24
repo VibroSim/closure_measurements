@@ -7,12 +7,12 @@ import numpy as np
 import numpy as np
 from closure_measurements.perform_dic import execute_dic 
 
-# Probably want to run view_dic_input on the same data file
+# Probably want to run closure_measurement_coords on the same data file
 # prior to running this to set TipCoords1 and 2 and XRange.
 #
-# using view_dic_input you can click on points in the plots
+# using closure_measurement_coords you can click on points in the plots
 # and it will print out the coordinates in meters,
-# suitable for use in
+# suitable for use in these parameters
 
 processpool = multiprocessing.Pool(multiprocessing.cpu_count()/2+1)
 #processpool=None
@@ -26,12 +26,14 @@ def main(args=None):
     dic_radius=20 # measured (I think) in the unscaled original pixels
     
 
-    if len(args) < 3:
+    if len(args) < 5:
         print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <xrange> [ dic_scalefactor ] [ dic_radius ]")
         print("Perform closure measurement on given .dgd optical microscopy file")
         print("Must specify crack tip locations and xrange as tuples")
         print("dic_scalefactor and dic_radius are optional parameters")
         print("defaulting to %d and %d respectively" % (dic_scalefactor, dic_radius))
+        print(" ")
+        print("See closure_measurement_coords script for finding crack tip locations")
         sys.exit(0)
         pass
 
@@ -57,7 +59,7 @@ def main(args=None):
         dic_radius = int(args[6])
         pass
     
-    tmpdir='/tmp'
+    #tmpdir='/tmp'
 
     
     
