@@ -13,7 +13,7 @@ from Cython.Build import cythonize
 closure_measurements_package_files=[ "qagse_fparams.c" ] #, "pt_steps/*" 
 
 
-console_scripts=["closure_measurement_dic","closure_measurement_coords"]
+console_scripts=["closure_measurement_dic","closure_measurement_coords","closure_measurement_processing"]
 #gui_scripts = []  # Could move graphical scripts into here to eliminate stdio window on Windows (where would error messages go?)
 
 console_scripts_entrypoints = [ "%s = closure_measurements.bin.%s:main" % (script,script.replace("-","_")) for script in console_scripts ]
@@ -41,12 +41,12 @@ setup(name="closure_measurements",
       author="Chris Giuffre and Stephen D. Holland",
       # url="http://",
       zip_safe=False,
-      packages=["closure_measurements"],
-                #"closure_measurements.bin"],
+      packages=["closure_measurements",
+                "closure_measurements.bin"],
       #data_files=[ ("share/closure_measurements/pt_steps",pt_steps_files),]
       package_data={"closure_measurements": closure_measurements_package_files},
       entry_points={ #"limatix.processtrak.step_url_search_path": [ "limatix.share.pt_steps = closure_measurements:getstepurlpath" ],
-                    #"console_scripts": console_scripts_entrypoints,
+                    "console_scripts": console_scripts_entrypoints,
                     #"gui_scripts": gui_scripts_entrypoints          
                 },
       ext_modules=ext_modules)

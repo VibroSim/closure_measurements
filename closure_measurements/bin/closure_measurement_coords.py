@@ -2,8 +2,9 @@ import sys
 import os
 
 import numpy as np
+from matplotlib import pyplot as pl
 
-from perform_dic import dic_raw_plots as dic_raw_plots
+from ..perform_dic import dic_raw_plots as dic_raw_plots
 
 
 #processpool=None
@@ -17,7 +18,7 @@ def main(args=None):
     dic_radius=20 # measured (I think) in the unscaled original pixels
     
 
-    if len(args) < 3:
+    if len(args) < 2:
         print("Usage: closure_measurement_coords <dgd_file>")
         print("Show plots of given dgd file for identifying tip coordinates and XRange")
         sys.exit(0)

@@ -85,7 +85,7 @@ def main(args=None):
      CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
 
-        (InitialModels_side2,
+    (InitialModels_side2,
      InitialCoeffs_side2,
      Error_side2,
      npoints_side2,
