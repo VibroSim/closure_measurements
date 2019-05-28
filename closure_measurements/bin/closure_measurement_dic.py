@@ -25,14 +25,14 @@ def main(args=None):
 
     dic_scalefactor=5
     dic_radius=20 # measured (I think) in the unscaled original pixels
-    
+    debug = False
 
     if len(args) < 5:
-        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <xrange> [ dic_scalefactor ] [ dic_radius ]")
+        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <xrange> [ debug ] [ dic_scalefactor ] [ dic_radius ]")
         print("Perform closure measurement on given .dgd optical microscopy file")
         print("Must specify crack tip locations and xrange as tuples")
-        print("dic_scalefactor and dic_radius are optional parameters")
-        print("defaulting to %d and %d respectively" % (dic_scalefactor, dic_radius))
+        print("debug, dic_scalefactor and dic_radius are optional parameters")
+        print("defaulting to %s, %d and %d respectively" % (str(debug),dic_scalefactor, dic_radius))
         print(" ")
         print("See closure_measurement_coords script for finding crack tip locations")
         sys.exit(0)
@@ -53,11 +53,15 @@ def main(args=None):
     XRange = ast.literal_eval(args[4])
 
     if len(args) > 5:
-        dic_scalefactor = int(args[5])
+        debug = bool(ast.literal_eval(args[5]))
+        pass
+
+    if len(args) > 6:
+        dic_scalefactor = int(args[6])
         pass
     
-    if len(args) > 6:
-        dic_radius = int(args[6])
+    if len(args) > 7:
+        dic_radius = int(args[7])
         pass
     
     #tmpdir='/tmp'
@@ -70,6 +74,6 @@ def main(args=None):
     if os.path.exists(dgs_outfilename):
         raise ValueError("Output file \"%s\" exists; will not overwrite" % (dgs_outfilename))
     
-    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,XRange,n_threads=4,processpool=processpool,debug=True)
+    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,XRange,n_threads=4,processpool=processpool,debug=debug)
 
     pass

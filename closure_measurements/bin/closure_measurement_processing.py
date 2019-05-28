@@ -1,13 +1,16 @@
 import sys
 import os
+import ast
 
 import multiprocessing
 import numpy as np
 
+from matplotlib import pyplot as pl
+
 from closure_measurements.process_dic import load_dgs
 from closure_measurements.process_dic import Calc_CTODs
 from closure_measurements.process_dic import CalcInitialModel
-from closure_measurements.process_dic import CalcFullModel
+from closure_measurements.process_dic import InitializeFullModel
 
 # Probably want to run closure_measurement_coords on the same data file
 # prior to running this to set TipCoords1 and 2 and XRange.
@@ -35,10 +38,15 @@ def main(args=None):
     nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
 
-    if len(args) < 5:
+    if len(args) < 3:
         print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> [DIC_span] [DIC_smoothing_window]")
         print(" ")
         print("Process DIC closure measurement on given .dgs DIC output file")
+        print(" ")
+        print("TIP: To use the clickable plots, run through ipython, e.g.:")
+        print("      ipython qtconsole &")
+        print(" (then within the new qtconsole:)")
+        print("      %%run %s <dgs_file> <Symmetric_COD> [DIC_span] [DIC_smoothing_window]" % (args[0]))
         print(" ")
         print("Parameters:")
         print("  Symmetric_COD:    True or False indicating whether a symmetric form")
@@ -61,13 +69,13 @@ def main(args=None):
 
     
     dgsfilename = args[1]
-    Symmetric_COD=bool(args[2])
+    Symmetric_COD=bool(ast.literal_eval(args[2]))
 
     if len(args) > 3:
         dic_span=int(args[3])
         pass
     if len(args) > 4:
-        dic_smoothing_window=int(args(4))
+        dic_smoothing_window=int(args[4])
         pass
     
     
@@ -92,4 +100,15 @@ def main(args=None):
      YPositions_side2,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
+    
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,doplots=True)
+
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,doplots=True)
+
+    
+    print("seed_param_side1=%s" % (str(seed_param_side1)))
+    print(" ")
+    print("seed_param_side2=%s" % (str(seed_param_side2)))
+
+    pl.show()
     pass

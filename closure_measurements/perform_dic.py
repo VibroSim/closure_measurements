@@ -72,8 +72,9 @@ def load_dgd(dgdfilename):
     nx=Images.shape[1]
     nimages=Images.shape[2]
     nloads=Images.shape[3]
-    
-    xbase=x0+np.arange(nx,dtype='d')*dx
+    use_x0=0.0
+
+    xbase=use_x0+np.arange(nx,dtype='d')*dx
 
     YPosns=Posns["Y"]
     StressPosns=Posns["Stress"]
@@ -102,15 +103,19 @@ def dic_raw_plots(dgdfilename):
     
     maxstress_idx=np.argmax(np.abs(StressPosns))
     for Yidx in range(YPosns.shape[0]):
-        YPosn = YPosns[Yidx]*1e-3 # Posns is stored in mm
+        YPosn = (YPosns[Yidx]-YPosns[0])*1e-3 # Posns is stored in mm
 
-        # *** NOTE: Y axis as defined by motion stages and Y axis from images
-        # are flipped in the recorded data. So here we flip the Y axis from the recorded data        
-        #use_y0 = y0 - (ny//dic_scalefactor-1)*dy*dic_scalefactor
-        use_y0 = y0 - (ny-1)*dy
+        ## *** NOTE: Y axis as defined by motion stages and Y axis from images
+        ## *** UPDATE: Don't think this is true!!!!
+        ## are flipped in the recorded data. So here we flip the Y axis from the recorded data        
+        ##use_y0 = y0 - (ny//dic_scalefactor-1)*dy*dic_scalefactor
+        #use_y0 = y0 - (ny-1)*dy
+        #use_y0=y0
+        use_y0=0.0
+        use_x0=0.0
         Yposvec=YPosn + use_y0 + np.arange(ny,dtype='d')*dy
         #Yposvec=YPosn - y0-np.arange(ny,dtype='d')*dy
-        extent=np.array((x0-dx/2.0,x0+nx*dx-dx/2.0,Yposvec[0]-dy/2.0,Yposvec[-1]+dy/2.0,))*1e3
+        extent=np.array((use_x0-dx/2.0,use_x0+nx*dx-dx/2.0,Yposvec[0]-dy/2.0,Yposvec[-1]+dy/2.0,))*1e3
         fig=pl.figure()
         pl.imshow(Images[::-1,:,Yidx,maxstress_idx],origin='lower',extent=extent)
         pl.xlabel('X position')
@@ -197,11 +202,14 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         #if YCnt != 1:
         #    continue
         Yidx = YRange_idxs[YCnt]
-        YPosn = YPosns[Yidx]*1e-3 # Posns is stored in mm
-        # *** NOTE: Y axis as defined by motion stages and Y axis from images
-        # are flipped in the recorded data. So here we flip the Y axis from the recorded data
+        YPosn = (YPosns[Yidx]-YPosns[0])*1e-3 # Posns is stored in mm
+        ## *** NOTE: Y axis as defined by motion stages and Y axis from images
+        ## are flipped in the recorded data. So here we flip the Y axis from the recorded data
+        ## *** UPDATE: Don't think this is true!!!!
 
-        use_y0 = y0 - (ny-1)*dy
+        #use_y0 = y0 - (ny-1)*dy
+        #use_y0 = y0
+        use_y0 = 0.0
         Yinivec[YCnt]=use_y0+YPosn
         Yposvec=Yinivec[YCnt] + np.arange(ny//dic_scalefactor,dtype='d')*dy*dic_scalefactor
         Yposvecs[:,YCnt]=Yposvec
@@ -269,7 +277,8 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step1",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord2","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        #dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step2",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
@@ -290,7 +299,8 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step1",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord2","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        #dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step2",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
@@ -311,7 +321,8 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step1",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord2","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        #dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",x0))
+        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumDbl("Step2",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (YCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
