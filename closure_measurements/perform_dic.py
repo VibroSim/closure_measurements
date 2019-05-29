@@ -170,7 +170,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
 
     ROI[:,ROI_xminidx:ROI_xmaxidx]=1
     #raise ValueError("Break")
-    YRange=(YPosns*1e-3 > TipCoords1[1]) & (YPosns*1e-3-ny*dy < TipCoords2[1])
+    YRange=((YPosns-YPosns[0])*1e-3 > TipCoords1[1]) & ((YPosns-YPosns[0])*1e-3-ny*dy < TipCoords2[1])
     YRangeSize=np.count_nonzero(YRange)
 
     dic_ny = ny//dic_scalefactor
@@ -338,7 +338,8 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     outwfmdict["Yposvecs"].ndim=2
     dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumStr("Coord1","Y Position"))
     dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumStr("Units1","meters"))
-    dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumDbl("IniVal1",y0))
+    #dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumDbl("IniVal1",y0))
+    dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumDbl("IniVal1",0.0))
     dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumDbl("Step1",dy*dic_scalefactor))
     dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumStr("Coord2","Image index"))
     dgm.AddMetaDatumWI(outwfmdict["Yposvecs"],dgm.CreateMetaDatumStr("Units2","Unitless"))

@@ -235,7 +235,8 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
     
     
     # Unwrap the error and yt coefficients
-    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
+    #valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
+    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 7) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
     
     # Use only data points for which yt is inside data range for initial fit and with good SNR
     for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= YPositions_min.ravel()) &  ( InitialCoeffs[1,:,:].ravel() <= YPositions_max.ravel()) & (SNR.ravel() > 1.0)
