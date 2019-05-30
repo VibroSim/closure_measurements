@@ -49,6 +49,10 @@ def main(args=None):
     TipCoords1 = ast.literal_eval(args[2])
     #TipCoords2=(0.000375043,0.00690454) # Should have larger value of y
     TipCoords2 = ast.literal_eval(args[3])
+
+    if TipCoords1[1] > TipCoords2[1]:
+        raise ValueError("Second tip coordinate should have larger value of y")
+    
     #XRange=(.15e-3,.8e-3)
     XRange = ast.literal_eval(args[4])
 

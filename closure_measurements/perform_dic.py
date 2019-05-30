@@ -169,8 +169,11 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     ROI_xmaxidx=np.where(xbase < XRange[1])[0][-1]
 
     ROI[:,ROI_xminidx:ROI_xmaxidx]=1
+
+    #sys.modules["__main__"].__dict__.update(globals())
+    #sys.modules["__main__"].__dict__.update(locals())
     #raise ValueError("Break")
-    YRange=((YPosns-YPosns[0])*1e-3 > TipCoords1[1]) & ((YPosns-YPosns[0])*1e-3-ny*dy < TipCoords2[1])
+    YRange=((YPosns-YPosns[0])*1e-3+ny*dy > TipCoords1[1]) & ((YPosns-YPosns[0])*1e-3 < TipCoords2[1])
     YRangeSize=np.count_nonzero(YRange)
 
     dic_ny = ny//dic_scalefactor
