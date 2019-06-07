@@ -103,7 +103,7 @@ def dic_raw_plots(dgdfilename):
     
     maxstress_idx=np.argmax(np.abs(StressPosns))
     for YMotionidx in range(YMotionPosns.shape[0]):
-        YMotionPosn = (YMotionPosns[Yidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
+        YMotionPosn = (YMotionPosns[YMotionidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
         
         ## *** NOTE: Y axis as defined by motion stages and X axis from images 
         ## are flipped in the recorded data. So here we flip the Y axis from the motion stages so it aligns with the X axis from the images
@@ -172,7 +172,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     #sys.modules["__main__"].__dict__.update(globals())
     #sys.modules["__main__"].__dict__.update(locals())
     #raise ValueError("Break")
-    XRange=((YMotionPosns-YMotionPosns[0])*1e-3+nx*dx > TipCoords1[0]) & ((YMotionPosns-YMotionPosns[0])*1e-3 < TipCoords2[0])
+    XRange=(-(YMotionPosns-YMotionPosns[0])*1e-3+nx*dx > TipCoords1[0]) & (-(YMotionPosns-YMotionPosns[0])*1e-3 < TipCoords2[0])
     XRangeSize=np.count_nonzero(XRange)
 
     dic_ny = ny//dic_scalefactor
@@ -188,9 +188,9 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     ROI_out_arrays=np.ones((dic_nx,dic_ny,nloads,nloads,XRangeSize),dtype='f',order='F')
     ROI_out_arrays[...]=np.nan
 
-    load1=np.zeros((nloads,nloads,YRangeSize),dtype='f',order='F')
+    load1=np.zeros((nloads,nloads,XRangeSize),dtype='f',order='F')
     load1[...]=np.nan
-    load2=np.zeros((nloads,nloads,YRangeSize),dtype='f',order='F')
+    load2=np.zeros((nloads,nloads,XRangeSize),dtype='f',order='F')
     load2[...]=np.nan
     
     XRange_idxs = np.where(XRange)[0]
@@ -199,12 +199,15 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
 
     Xinivec = np.ones(XRangeSize,dtype='f')
     Xinivec[...]=np.nan
+
+    #import pdb
+    #pdb.set_trace()
     
     for XCnt in range(XRange_idxs.shape[0]):
         #if YCnt != 1:
         #    continue
         Xidx = XRange_idxs[XCnt]
-        YMotionPosn = (YMotionPosns[Xidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
+        YMotionPosn = -(YMotionPosns[Xidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
         ## *** NOTE: Y axis as defined by motion stages and Y axis from images
         ## are flipped in the recorded data. So here we flip the Y axis from the motion stages
 
@@ -226,10 +229,10 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
             for idx2 in range(idx1+1,nloads):
                 #if idx2 != nloads-1:
                 #    continue
-                load1[idx1,idx2,YCnt]=ActualStressPosns[Yidx,idx1]
-                load2[idx1,idx2,YCnt]=ActualStressPosns[Yidx,idx2]
-                load1[idx2,idx1,YCnt]=ActualStressPosns[Yidx,idx2]
-                load2[idx2,idx1,YCnt]=ActualStressPosns[Yidx,idx1]
+                load1[idx1,idx2,XCnt]=ActualStressPosns[Xidx,idx1]
+                load2[idx1,idx2,XCnt]=ActualStressPosns[Xidx,idx2]
+                load1[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx2]
+                load2[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx1]
                 
                 input1=np.asfortranarray(Images[:,:,Xidx,idx1].astype(np.float64))
                 input2=np.asfortranarray(Images[:,:,Xidx,idx2].astype(np.float64))
@@ -246,14 +249,14 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
                 pass
             for (idx2,v_array,u_array,ROI_out_array) in correlate_results:
                 
-                u_disps[:,:,idx1,idx2,YCnt]=u_array*dx
-                v_disps[:,:,idx1,idx2,YCnt]=v_array*dy
+                u_disps[:,:,idx1,idx2,XCnt]=u_array*dx
+                v_disps[:,:,idx1,idx2,XCnt]=v_array*dy
                 
-                u_disps[:,:,idx2,idx1,YCnt]=-u_array*dx
-                v_disps[:,:,idx2,idx1,YCnt]=-v_array*dy
+                u_disps[:,:,idx2,idx1,XCnt]=-u_array*dx
+                v_disps[:,:,idx2,idx1,XCnt]=-v_array*dy
 
-                ROI_out_arrays[:,:,idx1,idx2,YCnt] = ROI_out_array
-                ROI_out_arrays[:,:,idx2,idx1,YCnt] = ROI_out_array                
+                ROI_out_arrays[:,:,idx1,idx2,XCnt] = ROI_out_array
+                ROI_out_arrays[:,:,idx2,idx1,XCnt] = ROI_out_array                
                 pass
             
             pass
@@ -293,7 +296,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         outwfmdict["v_disps%.3d" % (XCnt)].Name="v_disps%.3d" % (XCnt)
         outwfmdict["v_disps%.3d" % (XCnt)].data=v_disps[...,XCnt]
         outwfmdict["v_disps%.3d" % (XCnt)].dimlen=np.array(v_disps.shape[:-1])
-        outwfmdict["v_disps%.3d" % (YCnt)].ndim=4
+        outwfmdict["v_disps%.3d" % (XCnt)].ndim=4
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord1","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units1","meters"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",Xinivec[XCnt]))
