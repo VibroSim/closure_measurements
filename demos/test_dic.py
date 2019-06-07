@@ -10,7 +10,7 @@ execute_dic=scriptify(execute_dic_function)
 
 
 # Probably want to run view_dic_input on the same data file
-# prior to running this to set TipCoords1 and 2 and XRange.
+# prior to running this to set TipCoords1 and 2 and YRange.
 #
 # using view_dic_input you can click on points in the plots
 # and it will print out the coordinates in meters,
@@ -32,7 +32,7 @@ if __name__=="__main__":
     
     TipCoords1=(0.000339087,0.00317911) # should have smaller value of y
     TipCoords2=(0.000375043,0.00690454) # Should have larger value of y
-    XRange=(.15e-3,.8e-3)
+    YRange=(.15e-3,.8e-3)
     
     tmpdir='/tmp'
 
@@ -42,6 +42,6 @@ if __name__=="__main__":
     dgs_outfilepart=os.path.splitext(dgdbasename)[0]+"_dic.dgs"
     dgs_outfilename=os.path.join(tmpdir,dgs_outfilepart)
     
-    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,XRange,n_threads=4,processpool=processpool,debug=True)
+    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,n_threads=4,processpool=processpool,debug=True)
 
     pass

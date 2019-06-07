@@ -9,7 +9,7 @@ import numpy as np
 from closure_measurements.perform_dic import execute_dic 
 
 # Probably want to run closure_measurement_coords on the same data file
-# prior to running this to set TipCoords1 and 2 and XRange.
+# prior to running this to set TipCoords1 and 2 and YRange.
 #
 # using closure_measurement_coords you can click on points in the plots
 # and it will print out the coordinates in meters,
@@ -28,9 +28,9 @@ def main(args=None):
     debug = False
 
     if len(args) < 5:
-        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <xrange> [ debug ] [ dic_scalefactor ] [ dic_radius ]")
+        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <yrange> [ debug ] [ dic_scalefactor ] [ dic_radius ]")
         print("Perform closure measurement on given .dgd optical microscopy file")
-        print("Must specify crack tip locations and xrange as tuples")
+        print("Must specify crack tip locations and yrange as tuples")
         print("debug, dic_scalefactor and dic_radius are optional parameters")
         print("defaulting to %s, %d and %d respectively" % (str(debug),dic_scalefactor, dic_radius))
         print(" ")
@@ -53,8 +53,8 @@ def main(args=None):
     if TipCoords1[1] > TipCoords2[1]:
         raise ValueError("Second tip coordinate should have larger value of y")
     
-    #XRange=(.15e-3,.8e-3)
-    XRange = ast.literal_eval(args[4])
+    #YRange=(.15e-3,.8e-3)
+    YRange = ast.literal_eval(args[4])
 
     if len(args) > 5:
         debug = bool(ast.literal_eval(args[5]))
@@ -78,6 +78,6 @@ def main(args=None):
     if os.path.exists(dgs_outfilename):
         raise ValueError("Output file \"%s\" exists; will not overwrite" % (dgs_outfilename))
     
-    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,XRange,n_threads=4,processpool=processpool,debug=debug)
+    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,n_threads=4,processpool=processpool,debug=debug)
 
     pass
