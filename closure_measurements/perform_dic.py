@@ -234,9 +234,9 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
                 load1[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx2]
                 load2[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx1]
                 
-                input1=np.asfortranarray(Images[:,:,Xidx,idx1].astype(np.float64))
-                input2=np.asfortranarray(Images[:,:,Xidx,idx2].astype(np.float64))
-                ROI_buf=np.asfortranarray(ROI[:,:].astype(np.uint8))
+                input1=np.asfortranarray(Images[:,:,Xidx,idx1].T.astype(np.float64))
+                input2=np.asfortranarray(Images[:,:,Xidx,idx2].T.astype(np.float64))
+                ROI_buf=np.asfortranarray(ROI[:,:].T.astype(np.uint8))
 
                 correlate_params.append((idx2,input1,input2,ROI_buf,dic_scalefactor,dic_radius,n_threads,debug))
                 pass
@@ -249,14 +249,14 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
                 pass
             for (idx2,v_array,u_array,ROI_out_array) in correlate_results:
                 
-                u_disps[:,:,idx1,idx2,XCnt]=u_array*dx
-                v_disps[:,:,idx1,idx2,XCnt]=v_array*dy
+                u_disps[:,:,idx1,idx2,XCnt]=u_array.T*dx
+                v_disps[:,:,idx1,idx2,XCnt]=v_array.T*dy
                 
-                u_disps[:,:,idx2,idx1,XCnt]=-u_array*dx
-                v_disps[:,:,idx2,idx1,XCnt]=-v_array*dy
+                u_disps[:,:,idx2,idx1,XCnt]=-u_array.T*dx
+                v_disps[:,:,idx2,idx1,XCnt]=-v_array.T*dy
 
-                ROI_out_arrays[:,:,idx1,idx2,XCnt] = ROI_out_array
-                ROI_out_arrays[:,:,idx2,idx1,XCnt] = ROI_out_array                
+                ROI_out_arrays[:,:,idx1,idx2,XCnt] = ROI_out_array.T
+                ROI_out_arrays[:,:,idx2,idx1,XCnt] = ROI_out_array.T
                 pass
             
             pass
