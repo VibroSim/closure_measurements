@@ -65,7 +65,7 @@ def load_dgs(dgsfilename):
 
 
 
-def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_window):
+def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_window,load1,load2,nominal_modulus):
     
     CTODs=np.zeros((dic_ny,nloads,nloads,YRangeSize),dtype='d')
     for YCnt in range(YRangeSize):
@@ -78,7 +78,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
 
                 #if idx2 != nloads-1:
                 #    continue
-                (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx)
+                (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx,load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],nominal_modulus)
                 CTODs[:,idx1,idx2,YCnt]=CTOD
                 CTODs[:,idx2,idx1,YCnt]=-CTOD
                 pass
@@ -87,7 +87,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
     return CTODs
     
     
-def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
+def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,dic_dy,dic_span,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller Y values) or side=2 (larger Y values)"""
     
     InitialModels=np.zeros((nloads,nloads),dtype='O')
@@ -105,6 +105,8 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
     CTODValues = np.zeros((nloads,nloads),dtype='O')
     CTODValues[...]=None
 
+    
+
     for idx1 in range(nloads):
         #if idx1 != 0:
         #    continue
@@ -119,8 +121,11 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
                 #if YCnt != 1:
                 #    continue
                 Yposvec=Yposvecs[:,YCnt]
-                CTOD=CTODs[:,idx1,idx2,YCnt]
                 
+                load_diff = load2[idx1,idx2,YCnt]-load1[idx1,idx2,YCnt]
+                
+                CTOD=CTODs[:,idx1,idx2,YCnt]-(load_diff/nominal_modulus)*(dic_dy*dic_span)
+                #CTOD=CTODs[:,idx1,idx2,YCnt]
                 if side==1:
                     valid_locations = (Yposvec < CrackCenterY) & (~np.isnan(CTOD))
                     pass
@@ -180,7 +185,6 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
             npoints,
             YPositions,
             CTODValues)
-
 
 
 def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
@@ -253,7 +257,7 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
     avg_load_unwrapped=avg_load.ravel()[valid]
 
     ## Now sort them so lowest error comes first
-    #errsort=np.argsort(Error_unwrapped)
+    #errsort=np.argsort(Error_unwrapped)    
     
     #raise ValueError("Break")
     ## Do fit to first 50
@@ -300,7 +304,7 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
                 fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
+        #pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
         pl.title('yt')
         pl.grid()
 
@@ -487,7 +491,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                 full_model.full_model_yt(full_model_params,sigmarange,minload,maxload)*1e3,sigmarange/1.e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
+       # pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
         pl.title('yt')
         pl.grid()
 

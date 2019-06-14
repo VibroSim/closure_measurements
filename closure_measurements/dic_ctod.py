@@ -3,7 +3,7 @@ import scipy
 import scipy.ndimage
 
 
-def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
+def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx,appl_load1,appl_load2,nominal_modulus):
     """  Calculates Crack Tip Opening displacement from DIC data
      Parameters:
        u_disp: DIC displacement array... will trim to maximum 
@@ -13,6 +13,7 @@ def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
        DIC_ROI_out: ROI output from the DIC algorithm, same shape as v_disp
        ROI_xminidx: starting x index of the ROI divided bx the scalefactor
        ROI_xmaxidx: ending x index of the ROI divided bx the scalefactor
+       appl_load: load applied to sample 
        #y_pos:  Positions in meters of the various y positions of u_disp 
      Returns: 
        CTOD:  Arrax of the same length as y_pos
@@ -50,7 +51,6 @@ def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
         ROI_ymaxidx-=1
         pass
     
-
     # We had a failed correlation if we lost more that 20% of the area
     # from this last operation... So only proceed if we have good
     # data (otherwise we just return our default arrays of NaNs)
@@ -105,11 +105,16 @@ def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
                 lower_idx >= 0):
                 top_disp[ynum]=u_disp_filtered_cropped[ynum,upper_idx]
                 bot_disp[ynum]=u_disp_filtered_cropped[ynum,lower_idx]
+                
+                
                 CTOD[ynum]=top_disp[ynum]-bot_disp[ynum]
                 pass
             
             pass
         pass
-    
+        
+
+
+        
     return (CTOD,top_disp,bot_disp)
 
