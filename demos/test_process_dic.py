@@ -4,9 +4,6 @@ import os
 import multiprocessing
 import numpy as np
 
-#sys.path.insert(0,'/home/cgiuffre/closure_measurements')
-#import closure_measurements
-
 from matplotlib import pyplot as pl 
 from function_as_script import scriptify
 
@@ -38,7 +35,7 @@ CalcFullModel=CalcFullModel_function
 
 if __name__=="__main__":
 
-    dgsfilename = "/tmp/C18-AFVT-007R_optical_collect_optical_data_dic.dgs"
+    dgsfilename = "/tmp/C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
     
     
     dic_span=20 # formerly step... this is measured in the scaled piexels
@@ -49,6 +46,8 @@ if __name__=="__main__":
     nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
 
+    tip_tolerance = 100e-6 # 100 microns
+
     Symmetric_COD=True # assume a symmetric form for the COD -- appropriate when the data is from surface cracks of length 2a where the center is (roughly) a symmetry point
     
     
@@ -57,14 +56,16 @@ if __name__=="__main__":
 
     (dic_dy,dic_dx,dic_ny,dic_nx,YRangeSize,nloads,Yinivec,Yposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterY,TipCoords1,TipCoords2,ROI_dic_xminidx,ROI_dic_xmaxidx) = load_dgs(dgsfilename)
 
-    print(dic_dy)
-    print(dic_dx)
-    print(dic_ny)
-    print(dic_nx)
+
+    #print(TipCoords1)
+    #print(TipCoords1[1])
+    #print(TipCoords2)
+    #print(TipCoords2[1])
 
 
 
-    CTODs = Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_smoothing_window,load1,load2,nominal_modulus)
+
+    CTODs = Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_smoothing_window)
 
     (InitialModels_side1,
      InitialCoeffs_side1,
@@ -83,9 +84,9 @@ if __name__=="__main__":
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,dic_dy,dic_span,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,tip_tolerance,Symmetric_COD,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,tip_tolerance,Symmetric_COD,side=2,doplots=True)
 
     
     #(full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)

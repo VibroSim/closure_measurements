@@ -65,7 +65,7 @@ def load_dgs(dgsfilename):
 
 
 
-def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_window,load1,load2,nominal_modulus):
+def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_window):
     
     CTODs=np.zeros((dic_ny,nloads,nloads,YRangeSize),dtype='d')
     for YCnt in range(YRangeSize):
@@ -78,7 +78,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
 
                 #if idx2 != nloads-1:
                 #    continue
-                (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx,load1[idx1,idx2,YCnt],load2[idx1,idx2,YCnt],nominal_modulus)
+                (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(u_disps[:,:,idx1,idx2,YCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,YCnt],ROI_dic_xminidx,ROI_dic_xmaxidx)
                 CTODs[:,idx1,idx2,YCnt]=CTOD
                 CTODs[:,idx2,idx1,YCnt]=-CTOD
                 pass
@@ -201,7 +201,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     yt = scipy.interpolate.splev(sigma,tck)
     return yt
 
-def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,doplots=True):
+def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,tip_tolerance,Symmetric_COD,side,doplots=True):
     # Perform fit to the results of the Initial models,
     # to seed the full model:
     #
@@ -240,11 +240,15 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
     
     # Unwrap the error and yt coefficients
     #valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
-    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 7) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
+    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
     
     # Use only data points for which yt is inside data range for initial fit and with good SNR
-    for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= YPositions_min.ravel()) &  ( InitialCoeffs[1,:,:].ravel() <= YPositions_max.ravel()) & (SNR.ravel() > 1.0)
-    
+    if side < 1.5: # left side
+        for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= TipCoords1[1]-tip_tolerance) &  ( InitialCoeffs[1,:,:].ravel() <= CrackCenterY+tip_tolerance) & (SNR.ravel() > 1.0)
+        pass
+    else: # right side
+        for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= CrackCenterY-tip_tolerance) &  ( InitialCoeffs[1,:,:].ravel() <= TipCoords2[1]+tip_tolerance) & (SNR.ravel() > 1.0)
+        pass
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
     yt_unwrapped = InitialCoeffs[1,:,:].ravel()[valid]
@@ -304,7 +308,7 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
                 fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        #pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
+        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
         pl.title('yt')
         pl.grid()
 
@@ -491,7 +495,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,
                 full_model.full_model_yt(full_model_params,sigmarange,minload,maxload)*1e3,sigmarange/1.e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-       # pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
+        pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
         pl.title('yt')
         pl.grid()
 

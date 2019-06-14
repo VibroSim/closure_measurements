@@ -3,7 +3,7 @@ import scipy
 import scipy.ndimage
 
 
-def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx,appl_load1,appl_load2,nominal_modulus):
+def dic_ctod(u_disp,span,window,DIC_ROI_out,ROI_xminidx,ROI_xmaxidx):
     """  Calculates Crack Tip Opening displacement from DIC data
      Parameters:
        u_disp: DIC displacement array... will trim to maximum 

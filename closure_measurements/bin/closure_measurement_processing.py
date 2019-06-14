@@ -31,7 +31,7 @@ def main(args=None):
 
     dic_span=20 # formerly step... this is measured in the scaled pixels
     dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
-
+    tip_tolerance = 100e-6 #Tolerance for the visual measurement of the crack tip location.  This parameter controls how far beyond the manually selected tip location the code is willing to identfy a closure point
     
     # Non-adjustable parameters
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
@@ -64,6 +64,11 @@ def main(args=None):
         print("                    Size of the smoothing window for analysis. This is")
         print("                    measured in the scaled-up pixels used in the .dgs")
         print("                    file.")
+        print("  Tip_Tolerance: (optional, unit meters default %g)" %(tip_tolerance))
+        print("                    Tolerance for the visual measurement of the crack tip")
+        print("                    location.  This parameter controls how far beyond the")
+        print("                    manually selected tip location the code is willing to")
+        print("                    identfy a closure point")
         sys.exit(0)
         pass
 
@@ -76,6 +81,9 @@ def main(args=None):
         pass
     if len(args) > 4:
         dic_smoothing_window=int(args[4])
+        pass
+    if len(args) >5:
+        tip_tolerance=float(args[5])
         pass
     
     
@@ -101,9 +109,9 @@ def main(args=None):
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,tip_tolerance,Symmetric_COD,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,tip_tolerance,Symmetric_COD,side=2,doplots=True)
 
     
     print("seed_param_side1=%s" % (str(seed_param_side1)))
