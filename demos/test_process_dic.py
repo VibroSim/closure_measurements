@@ -54,7 +54,20 @@ if __name__=="__main__":
     ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
     dev = ctx.devices[0]
 
-    (dic_dx,dic_dy,dic_nx,dic_ny,XRangeSize,nloads,Xinivec,Xposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterX,TipCoords1,TipCoords2,ROI_dic_yminidx,ROI_dic_ymaxidx) = load_dgs(dgsfilename)
+
+    (dic_dx,dic_dy,
+     dic_nx,dic_ny,
+     XRangeSize,
+     nloads,
+     Xinivec,Xposvecs,
+     load1,load2,u_disps,v_disps,
+     ROI_out_arrays,
+     CrackCenterX,TipCoords1,TipCoords2,
+     ROI_dic_yminidx,ROI_dic_ymaxidx,
+     relshift_firstimg_lowerright_corner_x_ref,
+     relshift_firstimg_lowerright_corner_x_diff,
+     relshift_firstimg_lowerright_corner_y_ref,
+     relshift_firstimg_lowerright_corner_y_diff) = load_dgs(dgsfilename)
 
 
     #print(TipCoords1)
@@ -94,7 +107,16 @@ if __name__=="__main__":
 
     #(full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
 
-
+    if relshift_firstimg_lowerright_corner_x_ref is not None:
+        # Only applies to DIC dgs files generated through dc_process that have additional registration info added!
+        TestRegistration(nloads,Xposvecs,u_disps,v_disps,
+                         ROI_out_arrays,
+                         relshift_firstimg_lowerright_corner_x_ref=relshift_firstimg_lowerright_corner_x_ref,
+                         relshift_firstimg_lowerright_corner_x_diff=relshift_firstimg_lowerright_corner_x_diff,
+                         relshift_firstimg_lowerright_corner_y_ref=relshift_firstimg_lowerright_corner_y_ref,
+                         relshift_firstimg_lowerright_corner_y_diff=relshift_firstimg_lowerright_corner_y_diff)
+        pass
+    
     
     
     ## Plot diagnostics...

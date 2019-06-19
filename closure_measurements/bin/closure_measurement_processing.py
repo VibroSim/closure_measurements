@@ -86,8 +86,21 @@ def main(args=None):
         tip_tolerance=float(args[5])
         pass
     
-    
-    (dic_dx,dic_dy,dic_nx,dic_ny,XRangeSize,nloads,Xinivec,Xposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterX,TipCoords1,TipCoords2,ROI_dic_yminidx,ROI_dic_ymaxidx) = load_dgs(dgsfilename)
+
+    (dic_dx,dic_dy,
+     dic_nx,dic_ny,
+     XRangeSize,
+     nloads,
+     Xinivec,Xposvecs,
+     load1,load2,u_disps,v_disps,
+     ROI_out_arrays,
+     CrackCenterX,TipCoords1,TipCoords2,
+     ROI_dic_yminidx,ROI_dic_ymaxidx,
+     relshift_firstimg_lowerright_corner_x_ref,
+     relshift_firstimg_lowerright_corner_x_diff,
+     relshift_firstimg_lowerright_corner_y_ref,
+     relshift_firstimg_lowerright_corner_y_diff) = load_dgs(dgsfilename)
+
 
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)
 

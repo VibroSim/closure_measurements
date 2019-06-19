@@ -25,6 +25,16 @@ from . import initial_fit
 #TipCoords2=(.335e-3,7.20e-3) # Should have larger value of x
 #XRange=(.15e-3,.8e-3)
 
+
+# X Positions used in DIC (as seen in closure_measurement_coords script)
+# come from:
+#    * Ignoring (setting to 0) IniValX and IniValY from .dgd file (use_x0,use_y0)
+#    * Treating lower-left corner of first image as the origin.
+#    * X increases to the right, Y increases up
+#    * Motion stage "Y" position relative to the first such position
+#      corresponds to decreasing X.
+#    * pixels correspond to increasing x by dx.
+
 def load_dgd(dgdfilename):
     (metadatadict,wfmmetadatadict,expandedwfmdict)=dg_dgdread.dg_dgdread(dgdfilename)
 
@@ -52,7 +62,7 @@ def load_dgd(dgdfilename):
 
     dx=ReshapedWfmMetadata["GEV"]["Step1"][0,0] # Not sure if this should be Step1 or Step2...
     dy=ReshapedWfmMetadata["GEV"]["Step2"][0,0] # Not sure if this should be Step1 or Step2...
-    assert((ReshapedWfmMetadata["GEV"]["Step1"]==dy).all())
+    assert((ReshapedWfmMetadata["GEV"]["Step1"]==dx).all())
     assert((ReshapedWfmMetadata["GEV"]["Step2"]==dy).all())
 
 
@@ -88,8 +98,17 @@ def load_dgd(dgdfilename):
         ActualStressPosns=-ActualStressPosns
         pass
 
+
+    # We actually ignore the IniVal1/2 from the .dgd file
+    use_x0=0
+    use_y0=0 
+
+    ## *** NOTE: Y axis as defined by motion stages and Y axis from images
+    ## are flipped in the recorded data. So here we flip the Y axis from the motion stages
+    XPosn_relfirst = -(YMotionPosns-YMotionPosns[0])*1e-3 # 1e-3 converts motion stage mm into meters
+    LowerLeft_XCoordinates = use_x0 + XPosn_relfirst
     
-    return (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns)
+    return (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)
 
 
 def dic_plot_click_handler(event):
@@ -98,27 +117,20 @@ def dic_plot_click_handler(event):
 
 def dic_raw_plots(dgdfilename):
     from matplotlib import pyplot as pl
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns)=load_dgd(dgdfilename)
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)=load_dgd(dgdfilename)
     
     maxstress_idx=np.argmax(np.abs(StressPosns))
-    for YMotionidx in range(YMotionPosns.shape[0]):
-        YMotionPosn = (YMotionPosns[YMotionidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
+    for XMotionidx in range(LowerLeft_XCoordinates.shape[0]):
+        LowerLeft_XCoordinate = LowerLeft_XCoordinates[XMotionidx]
         
-        ## *** NOTE: Y axis as defined by motion stages and X axis from images 
-        ## are flipped in the recorded data. So here we flip the Y axis from the motion stages so it aligns with the X axis from the images
-        ##use_y0 = y0 - (ny//dic_scalefactor-1)*dy*dic_scalefactor
-        #use_y0 = y0 - (ny-1)*dy
-        #use_y0=y0
-        use_x0=0.0
-        use_y0=0.0
-        Xposvec=-YMotionPosn + use_x0 + np.arange(nx,dtype='d')*dx
+        Xposvec=LowerLeft_XCoordinate + np.arange(nx,dtype='d')*dx
         #Yposvec=YPosn - y0-np.arange(ny,dtype='d')*dy
         extent=np.array((Xposvec[0]-dx/2.0,Xposvec[-1]+dx/2.0,use_y0-dy/2.0,use_y0+ny*dy-dy/2.0,))*1e3
         fig=pl.figure()
-        pl.imshow(Images[:,:,YMotionidx,maxstress_idx].T,origin='lower',extent=extent)
+        pl.imshow(Images[:,:,XMotionidx,maxstress_idx].T,origin='lower',extent=extent)
         pl.xlabel('X position')
         pl.ylabel('Y position')
-        pl.title("YMotionidx=%d; YMotionPosn=%f mm" % (YMotionidx,YMotionPosn*1e3))
+        pl.title("XMotionidx=%d; LowerLeft_XCoordinate=%f mm" % (XMotionidx,LowerLeft_XCoordinate*1e3))
 
         fig.canvas.mpl_connect('button_press_event',dic_plot_click_handler)
         pass
@@ -132,21 +144,11 @@ def execute_one_dic(params):
 
     return (idx2,v_array,u_array,ROI_out_array)
 
-def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
-    """Perform DIC on optical microscopy .dgd file. 
-     dic_scalefactor and dic_radius parameters to ncorr, given in pixels
-     TipCoords1 is an (x,y) tuple indicating the coordinates of the tip with a 
-     lower value of y, in meters
-     TipCoords2 is an (x,y) tuple indicating the coordinates of the tip with a
-     larger value of y, in meters
-     YRange is a (y1,y2) tuple indicating the lower and upper bounds of the region of 
-     of interest in y, in meters
 
-"""
+def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
+                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_firstimg_lowerright_corner_x=None,relshift_firstimg_lowerright_corner_y=None,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+    """ Perform DIC on data already loaded into memory """
     
-
-    
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns)=load_dgd(dgdfilename)
 
     #dgs_outfilename=os.path.splitext(dgdfilename)[0]+"_dic.dgs"
     
@@ -171,7 +173,11 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     #sys.modules["__main__"].__dict__.update(globals())
     #sys.modules["__main__"].__dict__.update(locals())
     #raise ValueError("Break")
-    XRange=(-(YMotionPosns-YMotionPosns[0])*1e-3+nx*dx > TipCoords1[0]) & (-(YMotionPosns-YMotionPosns[0])*1e-3 < TipCoords2[0])
+
+    # XRange selects images  where the right hand edge of each image
+    # must be to the right of the left tip, and the left hand edge of
+    # each image must be to the left of the right tip
+    XRange=(LowerLeft_XCoordinates+nx*dx > TipCoords1[0]) & (LowerLeft_XCoordinates < TipCoords2[0])
     XRangeSize=np.count_nonzero(XRange)
 
     dic_ny = ny//dic_scalefactor
@@ -199,6 +205,17 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     Xinivec = np.ones(XRangeSize,dtype='f')
     Xinivec[...]=np.nan
 
+
+    if relshift_firstimg_lowerright_corner_x is not None:
+        relxmtx_ref=np.zeros((nloads,nloads),dtype='f',order='F')
+        relxmtx_diff=np.zeros((nloads,nloads),dtype='f',order='F')
+        pass
+    
+    if relshift_firstimg_lowerright_corner_y is not None:
+        relymtx_ref=np.zeros((nloads,nloads),dtype='f',order='F')
+        relymtx_diff=np.zeros((nloads,nloads),dtype='f',order='F')
+        pass
+
     #import pdb
     #pdb.set_trace()
     
@@ -206,14 +223,9 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         #if YCnt != 1:
         #    continue
         Xidx = XRange_idxs[XCnt]
-        YMotionPosn = -(YMotionPosns[Xidx]-YMotionPosns[0])*1e-3 # Posns is stored in mm
-        ## *** NOTE: Y axis as defined by motion stages and Y axis from images
-        ## are flipped in the recorded data. So here we flip the Y axis from the motion stages
+        LowerLeft_XCoordinate = LowerLeft_XCoordinates[Xidx]
 
-        #use_y0 = y0 - (ny-1)*dy
-        #use_y0 = y0
-        use_x0 = 0.0
-        Xinivec[XCnt]=use_x0+YMotionPosn
+        Xinivec[XCnt]=LowerLeft_XCoordinate
         Xposvec=Xinivec[XCnt] + np.arange(nx//dic_scalefactor,dtype='d')*dx*dic_scalefactor
         Xposvecs[:,XCnt]=Xposvec
         for idx1 in range(nloads):
@@ -232,6 +244,25 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
                 load2[idx1,idx2,XCnt]=ActualStressPosns[Xidx,idx2]
                 load1[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx2]
                 load2[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx1]
+
+                if relshift_firstimg_lowerright_corner_x is not None:
+                    relxmtx_ref[idx1,idx2]=relshift_firstimg_lowerright_corner_x[idx1]
+                    relxmtx_diff[idx1,idx2]=relshift_firstimg_lowerright_corner_x[idx2]
+                    #relxmtx_ref[idx2,idx1]=relshift_firstimg_lowerright_corner_x[idx1]
+                    pass
+                
+                if relshift_firstimg_lowerright_corner_y is not None:
+                    relymtx_ref[idx1,idx2]=relshift_firstimg_lowerright_corner_y[idx1]
+                    relymtx_diff[idx1,idx2]=relshift_firstimg_lowerright_corner_y[idx2]
+                    #relymtx_ref[idx2,idx1]=relshift_firstimg_lowerright_corner_y[idx1]
+                    pass
+
+                # DIC represents idx2 state minus idx1 state
+                #
+                # Relxmtx_ref values are positions of idx1 state
+                # Relxmtx_diff values are positions of idx2 state
+
+                # Expect DIC displacements to approximately match relxmtx_diff - relxmtx_ref
                 
                 input1=np.asfortranarray(Images[:,:,Xidx,idx1].T.astype(np.float64))
                 input2=np.asfortranarray(Images[:,:,Xidx,idx2].T.astype(np.float64))
@@ -251,8 +282,8 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
                 u_disps[:,:,idx1,idx2,XCnt]=u_array.T*dx
                 v_disps[:,:,idx1,idx2,XCnt]=v_array.T*dy
                 
-                u_disps[:,:,idx2,idx1,XCnt]=-u_array.T*dx
-                v_disps[:,:,idx2,idx1,XCnt]=-v_array.T*dy
+                #u_disps[:,:,idx2,idx1,XCnt]=-u_array.T*dx
+                #v_disps[:,:,idx2,idx1,XCnt]=-v_array.T*dy
 
                 ROI_out_arrays[:,:,idx1,idx2,XCnt] = ROI_out_array.T
                 ROI_out_arrays[:,:,idx2,idx1,XCnt] = ROI_out_array.T
@@ -281,7 +312,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
         #dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",y0))
-        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
+        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",ybase[0]))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step2",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
@@ -303,7 +334,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
         #dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",y0))
-        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
+        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",ybase[0]))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step2",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
@@ -325,7 +356,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
         #dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",y0))
-        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",0.0))
+        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal2",ybase[0]))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step2",dy*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord3","Stress Level DIC input 1"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord4","Stress Level DIC input 2"))
@@ -406,9 +437,95 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumInt("ROI_dic_ymaxidx",ROI_ymaxidx//dic_scalefactor))
 
 
+    if relshift_firstimg_lowerright_corner_x is not None:
+       relxwfm_ref = dg.wfminfo()
+       relxwfm_ref.Name = "relshift_firstimg_lowerright_corner_x_ref"
+       relxwfm_ref.data = relxmtx_ref
+       relxwfm_ref.dimlen = np.array(relxmtx_ref.shape)
+       relxwfm_ref.ndim=2
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("Coord1","First load index"))
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("Units1","Unitless"))
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("Coord2","Second load index"))
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("Units2","Unitless"))
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("AmplUnits","meters"))
+       dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("AmplCoord","X shift"))
+       outwfmdict["relshift_firstimg_lowerright_corner_x_ref"]=relxwfm_ref
+
+       relxwfm_diff = dg.wfminfo()
+       relxwfm_diff.Name = "relshift_firstimg_lowerright_corner_x_diff"
+       relxwfm_diff.data = relxmtx_diff
+       relxwfm_diff.dimlen = np.array(relxmtx_diff.shape)
+       relxwfm_diff.ndim=2
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("Coord1","First load index"))
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("Units1","Unitless"))
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("Coord2","Second load index"))
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("Units2","Unitless"))
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("AmplUnits","meters"))
+       dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("AmplCoord","X shift"))
+       outwfmdict["relshift_firstimg_lowerright_corner_x_diff"]=relxwfm_diff
+
+     pass
+
+    if relshift_firstimg_lowerright_corner_y is not None:
+        relywfm_ref = dg.wfminfo()
+        relywfm_ref.Name = "relshift_firstimg_lowerright_corner_y_ref"
+        relywfm_ref.data = relymtx_ref
+        relywfm_ref.dimlen = np.array(relymtx_ref.shape)
+        relywfm_ref.ndim=2
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("Coord1","First load index"))
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("Units1","Unitless"))
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("Coord2","Second load index"))
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("Units2","Unitless"))
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("AmplUnits","meters"))
+        dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("AmplCoord","Y shift"))
+        outwfmdict["relshift_firstimg_lowerright_corner_y_ref"]=relywfm_ref
+
+        relywfm_diff = dg.wfminfo()
+        relywfm_diff.Name = "relshift_firstimg_lowerright_corner_y_diff"
+        relywfm_diff.data = relymtx_diff
+        relywfm_diff.dimlen = np.array(relymtx_diff.shape)
+        relywfm_diff.ndim=2
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("Coord1","First load index"))
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("Units1","Unitless"))
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("Coord2","Second load index"))
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("Units2","Unitless"))
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("AmplUnits","meters"))
+        dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("AmplCoord","Y shift"))
+        outwfmdict["relshift_firstimg_lowerright_corner_y_diff"]=relywfm_diff
+        pass
+
+    
+    # Add extra waveforms provided by caller
+    for key in extrawfmdict:
+        outwfmdict[key]=extrawfmdict[key]
+        pass
+    
+    
     dgfh=dgf.creat(dgs_outfilename)
     dgf.writesnapshot(dgfh,outmetadata,outwfmdict)
     dgf.close(dgfh)
 
     return (outwfmdict,outmetadata,u_disps,v_disps,ROI_out_arrays,Xposvecs,Xinivec,CrackCenterX,dic_dx,dic_dy)
     
+
+
+    
+    
+
+
+def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+    """Perform DIC on optical microscopy .dgd file. 
+     dic_scalefactor and dic_radius parameters to ncorr, given in pixels
+     TipCoords1 is an (x,y) tuple indicating the coordinates of the tip with a 
+     lower value of y, in meters
+     TipCoords2 is an (x,y) tuple indicating the coordinates of the tip with a
+     larger value of y, in meters
+     YRange is a (y1,y2) tuple indicating the lower and upper bounds of the region of 
+     of interest in y, in meters
+
+"""
+    
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)=load_dgd(dgdfilename)
+
+    return execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
+                                   dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict=extra_wfmdict,n_threads=n_threads,processpool=processpool,debug=debug)
