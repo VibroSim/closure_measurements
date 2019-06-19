@@ -87,7 +87,7 @@ def Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_
     return CTODs
     
     
-def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
+def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,dic_dy,dic_span,Symmetric_COD,side,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller Y values) or side=2 (larger Y values)"""
     
     InitialModels=np.zeros((nloads,nloads),dtype='O')
@@ -105,6 +105,8 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
     CTODValues = np.zeros((nloads,nloads),dtype='O')
     CTODValues[...]=None
 
+    
+
     for idx1 in range(nloads):
         #if idx1 != 0:
         #    continue
@@ -119,8 +121,11 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
                 #if YCnt != 1:
                 #    continue
                 Yposvec=Yposvecs[:,YCnt]
-                CTOD=CTODs[:,idx1,idx2,YCnt]
                 
+                load_diff = load2[idx1,idx2,YCnt]-load1[idx1,idx2,YCnt]
+                
+                CTOD=CTODs[:,idx1,idx2,YCnt]-(load_diff/nominal_modulus)*(dic_dy*dic_span)
+                #CTOD=CTODs[:,idx1,idx2,YCnt]
                 if side==1:
                     valid_locations = (Yposvec < CrackCenterY) & (~np.isnan(CTOD))
                     pass
@@ -182,7 +187,6 @@ def CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_CO
             CTODValues)
 
 
-
 def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     # create (t,c,k) for scipy splev
     t=np.array([minload]*4 + [maxload]*4,dtype='d')  # four copies of minload followed by four copies of maxload
@@ -197,7 +201,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     yt = scipy.interpolate.splev(sigma,tck)
     return yt
 
-def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,Symmetric_COD,side,doplots=True):
+def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,YPositions,CTODValues,InitialModels,CrackCenterY,tip_tolerance,Symmetric_COD,side,doplots=True):
     # Perform fit to the results of the Initial models,
     # to seed the full model:
     #
@@ -236,11 +240,15 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
     
     # Unwrap the error and yt coefficients
     #valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
-    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 7) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
+    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (InitialCoeffs[0,:,:].ravel() >= min_c5)
     
     # Use only data points for which yt is inside data range for initial fit and with good SNR
-    for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= YPositions_min.ravel()) &  ( InitialCoeffs[1,:,:].ravel() <= YPositions_max.ravel()) & (SNR.ravel() > 1.0)
-    
+    if side < 1.5: # left side
+        for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= TipCoords1[1]-tip_tolerance) &  ( InitialCoeffs[1,:,:].ravel() <= CrackCenterY+tip_tolerance) & (SNR.ravel() > 1.0)
+        pass
+    else: # right side
+        for_initial_fit = valid & ( InitialCoeffs[1,:,:].ravel() >= CrackCenterY-tip_tolerance) &  ( InitialCoeffs[1,:,:].ravel() <= TipCoords2[1]+tip_tolerance) & (SNR.ravel() > 1.0)
+        pass
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
     yt_unwrapped = InitialCoeffs[1,:,:].ravel()[valid]
@@ -253,7 +261,7 @@ def InitializeFullModel(load1,load2,InitialCoeffs,Error,npoints,YPositions,CTODV
     avg_load_unwrapped=avg_load.ravel()[valid]
 
     ## Now sort them so lowest error comes first
-    #errsort=np.argsort(Error_unwrapped)
+    #errsort=np.argsort(Error_unwrapped)    
     
     #raise ValueError("Break")
     ## Do fit to first 50
