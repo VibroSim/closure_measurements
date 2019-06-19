@@ -87,9 +87,9 @@ def main(args=None):
         pass
     
     
-    (dic_dy,dic_dx,dic_ny,dic_nx,YRangeSize,nloads,Yinivec,Yposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterY,TipCoords1,TipCoords2,ROI_dic_xminidx,ROI_dic_xmaxidx) = load_dgs(dgsfilename)
+    (dic_dx,dic_dy,dic_nx,dic_ny,XRangeSize,nloads,Xinivec,Xposvecs,load1,load2,u_disps,v_disps,ROI_out_arrays,CrackCenterX,TipCoords1,TipCoords2,ROI_dic_yminidx,ROI_dic_ymaxidx) = load_dgs(dgsfilename)
 
-    CTODs = Calc_CTODs(dic_ny,nloads,YRangeSize,Yposvecs,u_disps,ROI_out_arrays,ROI_dic_xminidx,ROI_dic_xmaxidx,dic_span,dic_smoothing_window)
+    CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)
 
 
     
@@ -97,8 +97,8 @@ def main(args=None):
      InitialCoeffs_side1,
      Error_side1,
      npoints_side1,
-     YPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     XPositions_side1,
+     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
 
     (InitialModels_side2,
@@ -106,12 +106,12 @@ def main(args=None):
      Error_side2,
      npoints_side2,
      YPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Yposvecs,CrackCenterY,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,tip_tolerance,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,YPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterY,tip_tolerance,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,Symmetric_COD,side=2,doplots=True)
 
     
     print("seed_param_side1=%s" % (str(seed_param_side1)))

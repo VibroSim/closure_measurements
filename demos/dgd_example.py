@@ -21,6 +21,9 @@ dgdfilename = "/tmp/C14-UTCB-004F_tortuosity_2014-09-17_collect_optical_data-002
 scalefactor=5
 r=20
 
+
+# ***!!!! NOTE: This code is obsolete -- need to swap x and y labels and u and v displacements
+
 (metadatadict,wfmmetadatadict,expandedwfmdict)=dg_dgdread.dg_dgdread(dgdfilename)
 
 

@@ -238,14 +238,14 @@ float Bfunc_k4(float *knots,unsigned i,float xpos)
 
 
 doublereal full_model_kernel(float *sigma, 
-                             float *YPosition, 
+                             float *XPosition, 
                              float *minload,float *maxload, 
                              float *c1,float *c2, float *c3, float *c4, 
-                             float *c5,float *CrackCenterY,int *Symmetric_COD,float *side)
+                             float *c5,float *CrackCenterX,int *Symmetric_COD,float *side)
 {
   float t[8];
   float B14,B24,B34,B44;
-  float yt; 
+  float xt; 
   float sqrtarg,sqrtarg2;
   
   t[0]=t[1]=t[2]=t[3]=*minload;
@@ -256,12 +256,12 @@ doublereal full_model_kernel(float *sigma,
   B34 = Bfunc_k4(t,3,*sigma);
   B44 = Bfunc_k4(t,4,*sigma);
 
-  yt = (*c1)*B14 + (*c2)*B24 + (*c3)*B34 + (*c4)*B44;
+  xt = (*c1)*B14 + (*c2)*B24 + (*c3)*B34 + (*c4)*B44;
 
   if (*side < 1.5) { // left side, position > tip position
-    sqrtarg = *YPosition - yt;
+    sqrtarg = *XPosition - xt;
   } else { // right side, position < tip position
-    sqrtarg = yt - *YPosition;
+    sqrtarg = xt - *XPosition;
   }
 
   if (sqrtarg < 0.0) {
@@ -270,9 +270,9 @@ doublereal full_model_kernel(float *sigma,
 
   if (*Symmetric_COD) {
     if (*side < 1.5) { // left side
-      sqrtarg2 = 2*(*CrackCenterY) - yt - (*YPosition);
+      sqrtarg2 = 2*(*CrackCenterX) - xt - (*XPosition);
     } else {
-      sqrtarg2 = (*YPosition) - 2*(*CrackCenterY) + yt;
+      sqrtarg2 = (*XPosition) - 2*(*CrackCenterX) + xt;
     }
     if (sqrtarg2 < 0.0) {
       sqrtarg2=0.0;
@@ -288,11 +288,11 @@ doublereal full_model_kernel(float *sigma,
 
 __kernel void integrate_full_model_kernel(float load1,
                                           float load2,
-                                          __global const float *YPositions,
+                                          __global const float *XPositions,
                                           float minload,float maxload,
                                           float c1,float c2, float c3, float c4,
                                           float c5,
-                                          float CrackCenterY, 
+                                          float CrackCenterX, 
                                           int Symmetric_COD,
                                           float side,  // positive 1: RHS, negative 1: LHS
                                           int limit,
@@ -315,22 +315,22 @@ __kernel void integrate_full_model_kernel(float load1,
   float abserr=0.0;
   int neval=0;
   int ier=0;
-  float YPosition;
-  size_t Y_idx;
+  float XPosition;
+  size_t X_idx;
 
-  Y_idx = get_global_id(0);
-  YPosition=YPositions[Y_idx];
+  X_idx = get_global_id(0);
+  XPosition=YPositions[X_idx];
 
-  alist = flists + Y_idx*4*limit;
-  blist = flists + Y_idx*4*limit + limit;
-  rlist = flists + Y_idx*4*limit + 2*limit;
-  elist = flists + Y_idx*4*limit + 3*limit;
-  iord = iords + Y_idx*limit;
+  alist = flists + X_idx*4*limit;
+  blist = flists + X_idx*4*limit + limit;
+  rlist = flists + X_idx*4*limit + 2*limit;
+  elist = flists + X_idx*4*limit + 3*limit;
+  iord = iords + X_idx*limit;
 
   qagse_sigmaintegral(NULL,
-                               &YPosition,&minload,&maxload, // this start/end are the bounds of the splines
+                               &XPosition,&minload,&maxload, // this start/end are the bounds of the splines
                                &c1,&c2,&c3,&c4,&c5,
-                               &CrackCenterY,
+                               &CrackCenterX,
                                &Symmetric_COD,
                                &side,
                                &load1,&load2, // this start/end are the bounds of the integration
@@ -343,9 +343,9 @@ __kernel void integrate_full_model_kernel(float load1,
                                alist,blist,rlist,elist,iord,
                                &last);
   if (ier != 0) {
-    printf("sigmaintegral: ier=%%d; Y_idx=%%u; YPosition=%%f\n",ier,Y_idx,YPosition);
+    printf("sigmaintegral: ier=%%d; X_idx=%%u; XPosition=%%f\n",ier,X_idx,XPosition);
   }
-  out[Y_idx]=result;   
+  out[X_idx]=result;   
 }
 """
 
@@ -375,21 +375,21 @@ def get_kernelprog(ctx):
     
 
 
-def full_model_kernel(sigma,YPosition,c5,tck,CrackCenterY,Symmetric_COD,side):
+def full_model_kernel(sigma,XPosition,c5,tck,CrackCenterX,Symmetric_COD,side):
     """This is the integrand of: 
-          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma (asymmetric COD case)
+          integral_sigma1^sigma2 C5*sqrt(x-xt)*u(x-xt) dsigma (asymmetric COD case)
     or 
-          integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt)*sqrt(2yc-yt-y)*u(2yc-yt-y) dsigma (symmetric COD case)
+          integral_sigma1^sigma2 C5*sqrt(x-xt)*u(x-xt)*sqrt(2xc-xt-x)*u(2xc-xt-x) dsigma (symmetric COD case)
 
-        where yt is a function of sigma given by the spline
-        coefficents tck and yc is the coordinate of the crack center
+        where xt is a function of sigma given by the spline
+        coefficents tck and xc is the coordinate of the crack center
         """
-    yt = scipy.interpolate.splev(sigma,tck)
+    xt = scipy.interpolate.splev(sigma,tck)
     if side < 1.5: # left side, position > tip posiiton
-        sqrtarg = YPosition-yt
+        sqrtarg = XPosition-xt
         pass
     else: # right side, position < tip position
-        sqrtarg = yt-YPosition
+        sqrtarg = xt-XPosition
         pass
     
     #sqrtarg[sqrtarg < 0.0] = 0.0
@@ -399,10 +399,10 @@ def full_model_kernel(sigma,YPosition,c5,tck,CrackCenterY,Symmetric_COD,side):
 
     if Symmetric_COD:
         if side==1:
-            sqrtarg2 = 2*CrackCenterY-yt-YPosition
+            sqrtarg2 = 2*CrackCenterX-xt-XPosition
             pass
         else:
-            sqrtarg2 = YPosition-2*CrackCenterY+yt
+            sqrtarg2 = XPosition-2*CrackCenterX+xt
             pass
         if sqrtarg2 < 0.0:
             sqrtarg2=0.0
@@ -420,7 +420,7 @@ def full_model_kernel(sigma,YPosition,c5,tck,CrackCenterY,Symmetric_COD,side):
 
 
 
-def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,err):
+def plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,maxload,CrackCenterX,Symmetric_COD,side,full_model_residual_plot,err):
     from matplotlib import pyplot as pl
 
     splinecoeff=params[:4]
@@ -468,16 +468,16 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
 
             #sys.modules["__main__"].__dict__.update(globals())
             #sys.modules["__main__"].__dict__.update(locals())
-            YPositionsSort=np.argsort(YPositions[idx1,idx2])
-            YPositionsSorted=YPositions[idx1,idx2][YPositionsSort]
+            XPositionsSort=np.argsort(XPositions[idx1,idx2])
+            XPositionsSorted=XPositions[idx1,idx2][XPositionsSort]
             #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
             #InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
 
-            integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(YPosition,c5,tck,CrackCenterY,Symmetric_COD,side))[0]  for YPosition in YPositionsSorted ],dtype='d')
+            integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(XPosition,c5,tck,CrackCenterX,Symmetric_COD,side))[0]  for XPosition in XPositionsSorted ],dtype='d')
 
-            pl.plot(YPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
-                    YPositionsSorted*1e3,integralvals*1e6,'-')
-            pl.xlabel('Y (mm)')
+            pl.plot(XPositions[idx1,idx2]*1e3,CTODValues[idx1,idx2]*1e6,'.',
+                    XPositionsSorted*1e3,integralvals*1e6,'-')
+            pl.xlabel('X (mm)')
             pl.ylabel('CTOD and full model (um)')
             pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2]/1.e6,load2[idx1,idx2]/1.e6))
             pl.grid()
@@ -505,7 +505,7 @@ def plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,ma
 
 
 
-def full_model_residual_accel_normalized(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel_normalized(params,InitialCoeffs,XPositions,CTODValues,load1,load2,minload,maxload,CrackCenterX,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev):
     splinecoeff_normalized=params[:4]
     c5_normalized=params[4]
 
@@ -529,11 +529,11 @@ def full_model_residual_accel_normalized(params,InitialCoeffs,YPositions,CTODVal
     nominal_ctod = nominal_length*nominal_stress/nominal_modulus
 
     
-    return full_model_residual_accel(params_unnormalized,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
+    return full_model_residual_accel(params_unnormalized,InitialCoeffs,XPositions,CTODValues,load1,load2,minload,maxload,CrackCenterX,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev)/(nominal_ctod**2.0)
     
 
 
-def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev):
+def full_model_residual_accel(params,InitialCoeffs,XPositions,CTODValues,load1,load2,minload,maxload,CrackCenterX,Symmetric_COD,side,full_model_residual_plot,opencl_ctx,opencl_dev):
 
 
     import pyopencl as cl
@@ -559,7 +559,7 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
     for idx1 in range(load1.shape[0]):
 
         # Lists of buffers that are being used by OpenCL
-        YPos_bufs=[]
+        XPos_bufs=[]
         CTOD_arrays=[]
         out_arrays=[]
         out_bufs=[]
@@ -567,12 +567,12 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
         
         for idx2 in range(idx1+1,load1.shape[1]):
             # At this load pair, have array of data
-            # over y: YPositions[idx1,idx2]
+            # over x: XPositions[idx1,idx2]
             # and CTODValues[idx1,idx2]
             
             # Calculate the model value over the
-            # various Y positions:
-            #  integral_sigma1^sigma2 C5*sqrt(y-yt)*u(y-yt) dsigma
+            # various X positions:
+            #  integral_sigma1^sigma2 C5*sqrt(x-xt)*u(x-xt) dsigma
 
             # Use a first cut C5 estimate to filter out any coefficients that
             # optimized to zero for whatever reason
@@ -590,10 +590,10 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
                 continue
 
             
-            assert(len(YPositions[idx1,idx2].shape)==1)
+            assert(len(XPositions[idx1,idx2].shape)==1)
             
-            if YPositions[idx1,idx2].shape[0]==0:
-                continue  # Empty y list... nothing to do here
+            if XPositions[idx1,idx2].shape[0]==0:
+                continue  # Empty x list... nothing to do here
                 
             #sys.modules["__main__"].__dict__.update(globals())
             #sys.modules["__main__"].__dict__.update(locals())
@@ -615,41 +615,41 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
         
             assert(YPositions[idx1,idx2].flags.contiguous)
             assert(YPositions[idx1,idx2].dtype==np.float32)
-        
-            YPositions_buf = cl.Buffer(opencl_ctx,mf.READ_ONLY,size=YPositions[idx1,idx2].nbytes)
-            YCopyEv=cl.enqueue_copy(queue,YPositions_buf,YPositions[idx1,idx2],is_blocking=False);
-
-            flists_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*4*limit*YPositions[idx1,idx2].shape[0]) # 4 LIMIT-length float buffers per work element
             
-            iord_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*limit*YPositions[idx1,idx2].shape[0]) # 1 LIMIT-length int buffer per work element
-
-        
-            out_array=np.empty(YPositions[idx1,idx2].shape,dtype='f')
+            XPositions_buf = cl.Buffer(opencl_ctx,mf.READ_ONLY,size=XPositions[idx1,idx2].nbytes)
+            XCopyEv=cl.enqueue_copy(queue,XPositions_buf,XPositions[idx1,idx2],is_blocking=False);
+            
+            flists_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*4*limit*XPositions[idx1,idx2].shape[0]) # 4 LIMIT-length float buffers per work element
+            
+            iord_buf = cl.Buffer(opencl_ctx,mf.READ_WRITE,size=4*limit*XPositions[idx1,idx2].shape[0]) # 1 LIMIT-length int buffer per work element
+            
+            
+            out_array=np.empty(XPositions[idx1,idx2].shape,dtype='f')
             out_buf=cl.Buffer(opencl_ctx,mf.WRITE_ONLY,size=out_array.nbytes)
         
             #import pdb
             #pdb.set_trace()
             
-            KernEv=kern(queue,YPositions[idx1,idx2].shape,None,
+            KernEv=kern(queue,XPositions[idx1,idx2].shape,None,
                         load1[idx1,idx2],
                         load2[idx1,idx2],
-                        YPositions_buf,
+                        XPositions_buf,
                         minload,maxload,
                         c1,c2,c3,c4,
                         c5,
-                        CrackCenterY,
+                        CrackCenterX,
                         int(Symmetric_COD),
                         side,
                         limit,
                         flists_buf,
                         iord_buf,
-                        out_buf,wait_for=(YCopyEv,))
+                        out_buf,wait_for=(XCopyEv,))
         
             out_event=cl.enqueue_copy(queue,out_array,out_buf,wait_for=(KernEv,),is_blocking=False)
             # err += (integral-CTODValues[idx1,idx2][YPosIdx])**2.0
             queue.flush()
             
-            YPos_bufs.append(YPositions_buf)
+            XPos_bufs.append(XPositions_buf)
             CTOD_arrays.append(CTODValues[idx1,idx2])
             out_arrays.append(out_array)
             out_bufs.append(out_buf)
@@ -657,8 +657,8 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
             pass
             
         # Go through list of buffers, waiting for completion
-        for pos in range(len(YPos_bufs)):
-            YPos_buf=YPos_bufs[pos]
+        for pos in range(len(XPos_bufs)):
+            XPos_buf=XPos_bufs[pos]
             CTOD_array=CTOD_arrays[pos]
             out_array=out_arrays[pos]
             out_buf=out_bufs[pos]
@@ -670,7 +670,7 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
             err += np.sum((out_array-CTOD_array)**2.0)
             numpos += out_array.shape[0]
             
-            YPos_buf.release()
+            XPos_buf.release()
             out_buf.release()
             #out_event.release()
         
@@ -682,7 +682,7 @@ def full_model_residual_accel(params,InitialCoeffs,YPositions,CTODValues,load1,l
     print("full_model_residual: Calculate at params=%s; err=%g" % (str(params),err))
 
     if full_model_residual_plot is not None:
-        plot_full_model_residual(params,YPositions,CTODValues,load1,load2,minload,maxload,CrackCenterY,Symmetric_COD,side,full_model_residual_plot,err)
+        plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,maxload,CrackCenterX,Symmetric_COD,side,full_model_residual_plot,err)
         pass
         
     

@@ -16,7 +16,6 @@ import dg_dgdread
 #pyximport.install()
 
 from . import correlate
-from . import dic_ctod
 from . import initial_fit
 
 
