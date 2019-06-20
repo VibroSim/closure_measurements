@@ -35,18 +35,18 @@ def main(args=None):
     
     # Non-adjustable parameters
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
-    nominal_modulus=100.0e9 # nominal modulus
+    #nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
 
     if len(args) < 3:
-        print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> [DIC_span] [DIC_smoothing_window]")
+        print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> <YoungsModulus> [DIC_span] [DIC_smoothing_window] [Tip tolerance]")
         print(" ")
         print("Process DIC closure measurement on given .dgs DIC output file")
         print(" ")
         print("TIP: To use the clickable plots, run through ipython, e.g.:")
         print("      ipython qtconsole &")
         print(" (then within the new qtconsole:)")
-        print("      %%run %s <dgs_file> <Symmetric_COD> [DIC_span] [DIC_smoothing_window]" % (args[0]))
+        print("      %%run %s <dgs_file> <Symmetric_COD> <YoungsModulus> [DIC_span] [DIC_smoothing_window] [Tip tolerance]" % (args[0]))
         print(" ")
         print("Parameters:")
         print("  Symmetric_COD:    True or False indicating whether a symmetric form")
@@ -54,6 +54,8 @@ def main(args=None):
         print("                    Symmetric form is appropriate for surface cracks")
         print("                    that are actually of length 2a, but where we are")
         print("                    analyzing half of the crack at a time")
+        print("  YoungsModulus:    Value for Young's modulus, in Pascals. Typically")
+        print("                    either 113.8e9 for Ti-6-4 or 200e9 for In718")
         print("  DIC_span:         (optional, default %d)" % (dic_span))
         print("                    Span of DIC perpendicular-to-crack step analysis.")
         print("                    This is measured in the scaled-up pixels used in the")
@@ -75,15 +77,16 @@ def main(args=None):
     
     dgsfilename = args[1]
     Symmetric_COD=bool(ast.literal_eval(args[2]))
-
-    if len(args) > 3:
-        dic_span=int(args[3])
-        pass
+    YoungsModulus = float(args[3])
+    
     if len(args) > 4:
-        dic_smoothing_window=int(args[4])
+        dic_span=int(args[4])
         pass
-    if len(args) >5:
-        tip_tolerance=float(args[5])
+    if len(args) > 5:
+        dic_smoothing_window=int(args[5])
+        pass
+    if len(args) > 6:
+        tip_tolerance=float(args[6])
         pass
     
 
@@ -111,7 +114,14 @@ def main(args=None):
      Error_side1,
      npoints_side1,
      XPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side1) = CalcInitialModel(nloads,CTODs,
+                                          load1,load2,
+                                          Xposvecs,CrackCenterX,
+                                          dic_dy,dic_span,
+                                          Symmetric_COD,2,YoungsModulus,
+                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                          doplots=True)
 
 
     (InitialModels_side2,
@@ -119,7 +129,14 @@ def main(args=None):
      Error_side2,
      npoints_side2,
      YPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,
+                                          load1,load2,
+                                          Xposvecs,CrackCenterX,
+                                          dic_dy,dic_span,
+                                          Symmetric_COD,2,YoungsModulus,
+                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                          doplots=True)
 
     
     (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)

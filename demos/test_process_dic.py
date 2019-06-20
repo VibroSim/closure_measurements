@@ -37,13 +37,17 @@ if __name__=="__main__":
 
     #dgsfilename = "/tmp/C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
     dgsfilename = "/tmp/C18-AFVT-011X_optical_collect_optical_data_dic.dgs"
+
+    YoungsModulus=113.8e9  # 113.8 GPa for Ti-6-4
+    # YoungsModulus=200.0e9 # 200 GPa for In718
+    
     
     dic_span=20 # formerly step... this is measured in the scaled piexels
     dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
 
 
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
-    nominal_modulus=100.0e9 # nominal modulus
+    #nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
 
     tip_tolerance = 100e-6 # 100 microns
@@ -85,7 +89,7 @@ if __name__=="__main__":
      Error_side1,
      npoints_side1,
      XPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,1,YoungsModulus,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
 
     
 
@@ -94,7 +98,7 @@ if __name__=="__main__":
      Error_side2,
      npoints_side2,
      XPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,side=2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
     (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)

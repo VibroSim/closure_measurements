@@ -27,9 +27,11 @@ def run(_xmldoc,_element,
         debug_bool=False):
 
     # Coordinates in _dic.dgs files genereted by
-    # this processtrak step shall be in fiducial image
+    # this processtrak step shall be in stitched optical image
     # coordinates (see ExtractAndSitchOpticalImageJ.py _aligned_measnum.dgs and RegisterOpticalData.py)
 
+    # To generate fiducial coordinates from coordinates in the _dic.dgs files:
+    #   * add (xshift,yshift)
     
 
     xshift = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(dc_coordinatetransform, 'dc:translation/dc:xtranslation')).value('m')
@@ -37,16 +39,16 @@ def run(_xmldoc,_element,
     
     #keypoints = _opxmldoc.xpathcontext(dc_crackpath, 'dc:segment/dc:keypoint')
 
-    crackstartx = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[1]/dc:xcoordinate')).value('m')
-    crackstarty = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[1]/dc:ycoordinate')).value('m')
+    crackstartx = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[1]/dc:xcoordinate')).value('m') - xshift
+    crackstarty = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[1]/dc:ycoordinate')).value('m') - yshift
 
     (crackally,crackally_units) = _xmldoc.xpathcontextnumpy(dc_crackpath, 'dc:segment/dc:keypoint/dc:ycoordinate')
     assert(limatix.lm_units.compareunits(crackally_units,limatix.lm_units.parseunits('m'))==1.0) # units of crack coordinates must be meters
-    crackmaxy = np.max(crackally)
-    crackminy = np.min(crackally)
+    crackmaxy = np.max(crackally) - yshift
+    crackminy = np.min(crackally) - yshift
     
-    crackendx = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[last()]/dc:xcoordinate')).value('m')
-    crackendy = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[last()]/dc:ycoordinate')).value('m')
+    crackendx = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[last()]/dc:xcoordinate')).value('m') - xshift
+    crackendy = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[last()]/dc:ycoordinate')).value('m') - yshift
 
     assert(crackstartx < crackendx)
     TipCoords1=(crackstartx,crackstarty)
@@ -67,8 +69,8 @@ def run(_xmldoc,_element,
     for stresscnt in range(ActualStressPosns.shape[1]):
 
         # Load in the registration shift for this stress level.
-        shift_firstimg_lowerleft_corner_x.append(xshift + numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_x[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
-        shift_firstimg_lowerleft_corner_y.append(yshift + numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
+        shift_firstimg_lowerleft_corner_x.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_x[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
+        shift_firstimg_lowerleft_corner_y.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
         
 
         pass

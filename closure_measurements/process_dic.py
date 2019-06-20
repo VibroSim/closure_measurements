@@ -152,8 +152,9 @@ def CalcInitialModel(nloads,CTODs,
                      load1,load2,
                      Xposvecs,CrackCenterX,dic_dy,
                      dic_span,Symmetric_COD,side,
+                     YoungsModulus,
                      relshift_firstimg_lowerleft_corner_x_ref=None,
-                     nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=False):
+                     nominal_length=2e-3,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller X values) or side=2 (larger X values)"""
     
     InitialModels=np.zeros((nloads,nloads),dtype='O')
@@ -195,8 +196,12 @@ def CalcInitialModel(nloads,CTODs,
                     pass
 
                 load_diff = load2[idx1,idx2,XCnt]-load1[idx1,idx2,XCnt]
-                
-                CTOD=CTODs[:,idx1,idx2,XCnt]-(load_diff/nominal_modulus)*(dic_dy*dic_span)
+
+                # When evaluating CTOD, our measured values from DIC will include a bias
+                # from the stretching that occurs across the dic_span.
+                # The subtraction in this next line estimates the magnitude of that stretching
+                # to be (sigma/E)*L and subtracts it out. 
+                CTOD=CTODs[:,idx1,idx2,XCnt]-(load_diff/YoungsModulus)*(dic_dy*dic_span)
                 #CTOD=CTODs[:,idx1,idx2,XCnt]
                 if side==1:
                     valid_locations = (Xposvec < CrackCenterX) & (~np.isnan(CTOD))
@@ -215,9 +220,9 @@ def CalcInitialModel(nloads,CTODs,
                 # No Data!
                 continue
 
-            x0=(np.sqrt(nominal_length)/nominal_modulus,np.mean(XPositions[idx1,idx2]))
+            x0=(np.sqrt(nominal_length)/YoungsModulus,np.mean(XPositions[idx1,idx2]))
             #x0=(1.0e-13,np.mean(XPositions[idx1,idx2]))
-            (c5,xt)=initial_fit.fit_initial_model(x0,XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side,CTODValues[idx1,idx2],nominal_length,nominal_modulus,nominal_stress)
+            (c5,xt)=initial_fit.fit_initial_model(x0,XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side,CTODValues[idx1,idx2],YoungsModulus,nominal_length,nominal_stress)
             print("side=%d; xt=%f" % (side,xt))
             InitialModels[idx1,idx2]=initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side)
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,xt),XPositions,load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],side)
