@@ -279,7 +279,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     xt = scipy.interpolate.splev(sigma,tck)
     return xt
 
-def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,tip_tolerance,Symmetric_COD,side,doplots=True):
+def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side,doplots=True):
     # Perform fit to the results of the Initial models,
     # to seed the full model:
     #
@@ -321,7 +321,13 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
 
     c5_or_neginf = InitialCoeffs[0,:,:].ravel()
     c5_or_neginf[np.isnan(c5_or_neginf)] = -np.inf
-    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() > 20) &  (c5_or_neginf >= min_c5)
+
+    # default min_dic_points_per_meter = 20 points/0.5mm = 40 points/mm = 40000
+
+    # minimum number of points required for this half of crack
+    min_num_points = min_dic_points_per_meter*(TipCoords2[0]-TipCoords1[0])/2.0
+
+    valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() >= min_num_points) &  (c5_or_neginf >= min_c5)
     
     # Use only data points for which xt is inside data range for initial fit and with good SNR
 

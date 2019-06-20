@@ -45,6 +45,7 @@ if __name__=="__main__":
     dic_span=20 # formerly step... this is measured in the scaled piexels
     dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
 
+    min_dic_points_per_meter=40000
 
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
     #nominal_modulus=100.0e9 # nominal modulus
@@ -101,9 +102,9 @@ if __name__=="__main__":
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1,fm_plots) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1,fm_plots) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2,fm_plots) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2,fm_plots) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
 
     
     #(full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,YPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterY,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,opencl_ctx=ctx,opencl_dev=dev)
