@@ -15,8 +15,20 @@ except ImportError:
 class dummy(object):
     pass
 
-def getstepurlpath():
-    mypath = sys.modules[dummy.__module__].__file__
-    mydir=os.path.split(mypath)[0]
+pkgpath = sys.modules[dummy.__module__].__file__
+pkgdir=os.path.split(mypath)[0]
 
-    return [ pathname2url(os.path.join(mydir,"pt_steps")) ]
+def getstepurlpath():
+
+    return [ pathname2url(os.path.join(pkgdir,"pt_steps")) ]
+
+
+versionpath = os.path.join(pkgpath,"version.txt")
+if os.path.exists(versionpath):
+    versionfh = open(versionpath,"r")
+    __version__=versionfh.read().strip()
+    pass
+else:
+    __version__="UNINSTALLED"
+    pass
+
