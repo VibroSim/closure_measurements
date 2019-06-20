@@ -66,9 +66,9 @@ def run(_xmldoc,_element,
 
 
 
-    CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)
+    CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span_int,dic_smoothing_window_int)
 
-        (InitialModels_side1,
+    (InitialModels_side1,
      InitialCoeffs_side1,
      Error_side1,
      npoints_side1,
@@ -76,8 +76,8 @@ def run(_xmldoc,_element,
      CTODValues_side1) = CalcInitialModel(nloads,CTODs,
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span,
-                                          Symmetric_COD,2,YoungsModulus,
+                                          dic_dy,dic_span_int,
+                                          dc_symmetric_cod_bool,1,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
@@ -91,16 +91,16 @@ def run(_xmldoc,_element,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span,
-                                          Symmetric_COD,2,YoungsModulus,
+                                          dic_dy,dic_span_int,
+                                          dc_symmetric_cod_bool,2,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
 
 
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=2,doplots=True)
 
 
     minload=np.min(load1[~np.isnan(load1)].ravel())

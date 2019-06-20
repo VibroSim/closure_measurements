@@ -118,7 +118,7 @@ def main(args=None):
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
                                           dic_dy,dic_span,
-                                          Symmetric_COD,2,YoungsModulus,
+                                          Symmetric_COD,1,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
@@ -139,9 +139,9 @@ def main(args=None):
                                           doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,Symmetric_COD,side=1,doplots=True)
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,Symmetric_COD,side=2,doplots=True)
 
     
     print("seed_param_side1=%s" % (str(seed_param_side1)))

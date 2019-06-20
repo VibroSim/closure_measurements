@@ -98,7 +98,7 @@ def fit_initial_model(seed_param,Xposvec,load1,load2,CrackCenterX,Symmetric_COD,
         seed_param_normalized=(c5*YoungsModulus/np.sqrt(nominal_length),xt/nominal_length)
         pass
     
-    res=scipy.optimize.minimize(initial_residual_normalized,seed_param_normalized,args=(Xposvec,load1,load2,CrackCenterX,Symmetric_COD,side,CTOD,YounsgsModulus,nominal_length,nominal_stress),method="SLSQP",options={"eps": 1e-6,"ftol": 1e-7},bounds=((0.0,None),((np.min(Xposvec)-nominal_length)/nominal_length,(np.max(Xposvec)+nominal_length)/nominal_length)))
+    res=scipy.optimize.minimize(initial_residual_normalized,seed_param_normalized,args=(Xposvec,load1,load2,CrackCenterX,Symmetric_COD,side,CTOD,YoungsModulus,nominal_length,nominal_stress),method="SLSQP",options={"eps": 1e-6,"ftol": 1e-7},bounds=((0.0,None),((np.min(Xposvec)-nominal_length)/nominal_length,(np.max(Xposvec)+nominal_length)/nominal_length)))
     #(c5,xt)=res.x
     if Symmetric_COD:
         # c5 has units of meters of COD per length per Pascal of load
