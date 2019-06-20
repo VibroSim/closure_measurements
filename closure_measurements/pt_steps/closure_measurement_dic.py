@@ -86,7 +86,7 @@ def run(_xmldoc,_element,
     LowerLeft_XCoordinates += shift_firstimg_lowerleft_corner_x[0]  # !!!*** (lower-right vs. lower left???)
     ybase += shift_firstimg_lowerleft_corner_y[0]  
 
-    dgs_outfilehref = hrefv(posixpath.splitext(scan_outdgd_href.get_bare_unquoted_filename())[0]+"_dic.dgs",contexthref=scan_outdgd_href.leafless())
+    dgs_outfilehref = hrefv(posixpath.splitext(scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=scan_outdgd_href.leafless())
 
     extra_wfmdict={}
 

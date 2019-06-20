@@ -1,8 +1,11 @@
 import sys
 import ast
+import copy
 import posixpath
 import multiprocessing
 import numpy as np
+
+from matplotlib import pyplot as pl
 
 import limatix.timestamp
 from closure_measurements import process_dic
@@ -10,6 +13,7 @@ from closure_measurements import process_dic
 from closure_measurements.process_dic import load_dgs,Calc_CTODs,CalcInitialModel,EvalEffectiveTip,InitializeFullModel
 
 from limatix import dc_value
+from limatix import xmldoc
 from limatix.dc_value import numericunitsvalue as numericunitsv
 from limatix.dc_value import hrefvalue as hrefv
 from limatix.dc_value import xmltreevalue as xmltreev
@@ -21,6 +25,7 @@ def run(_xmldoc,_element,
         dc_scan_outdic_href,
         dc_coordinatetransform,
         dc_spcYoungsModulus_numericunits,
+        dc_specimen_str,
         dic_span_int=20,
         dic_smoothing_window_int=3,
         dic_tip_tolerance_numericunits=numericunitsv(100e-6,"m"),
@@ -87,7 +92,7 @@ def run(_xmldoc,_element,
      InitialCoeffs_side2,
      Error_side2,
      npoints_side2,
-     YPositions_side2,
+     XPositions_side2,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
@@ -95,12 +100,14 @@ def run(_xmldoc,_element,
                                           dc_symmetric_cod_bool,2,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
-                                          doplots=True)
+                                          doplots=False)
 
 
-    (minload_side1,maxload_side1,seed_param_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1,fm_plots_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=1,doplots=True)
+    (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
 
-    (minload_side2,maxload_side2,seed_param_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2,fm_plots_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,dc_symmetric_cod_bool,side=2,doplots=True)
+    (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
 
 
     minload=np.min(load1[~np.isnan(load1)].ravel())
@@ -110,21 +117,45 @@ def run(_xmldoc,_element,
     tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
     tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
 
-    closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"})
+    closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     for loadcnt in range(num_output_loads):
         newel = closureprofile_side1.addsimpleelement(closureprofile_side1.getroot(),"dc:tippos",(tippos_side1[loadcnt],"m"))
         closureprofile_side1.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
         pass
     closureprofile_side1_tree = xmltreev(closureprofile_side1)
         
-    closureprofile_side2 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"})
+    closureprofile_side2 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     for loadcnt in range(num_output_loads):
         newel = closureprofile_side2.addsimpleelement(closureprofile_side2.getroot(),"dc:tippos",(tippos_side2[loadcnt],"m"))
         closureprofile_side2.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
         pass
     closureprofile_side2_tree = xmltreev(closureprofile_side2)
-    
+
+    fitplot_side1_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_tipfit_side1.png",contexthref=_dest_href)
+    pl.figure(fitplot_side1.number)
+    pl.savefig(fitplot_side1_href.getpath(),dpi=300)
+
+    fitplot_side2_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_tipfit_side2.png",contexthref=_dest_href)
+    pl.figure(fitplot_side2.number)
+    pl.savefig(fitplot_side2_href.getpath(),dpi=300)
+
+    closureprofile_plot_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_closureprofile.png",contexthref=_dest_href)
+    pl.figure()
+    pl.plot(tippos_side1*1e3,output_loads/1e6,'-',
+            tippos_side2*1e3,output_loads/1e6,'-')
+    pl.grid()
+    pl.xlabel('Tip position (relative to stitched image, mm)')
+    pl.ylabel('Applied load (MPa)')
+    pl.legend(('Side 1','Side 2'))
+    pl.title(dc_specimen_str)
+    pl.savefig(closureprofile_plot_href.getpath(),dpi=300)
+
+                         
+    pl.close('all')
     return [
         (("dc:closureprofile",{"side": "1"}),closureprofile_side1_tree),
         (("dc:closureprofile",{"side": "2"}),closureprofile_side2_tree),
+        ("dc:closureprofileplot",closureprofile_plot_href),
+        (("dc:dic_tip_fit",{"side": "1"}),fitplot_side1_href),
+        (("dc:dic_tip_fit",{"side": "2"}),fitplot_side2_href),
     ]

@@ -1,4 +1,5 @@
 import sys
+import copy
 import numpy as np
 
 #from matplotlib import pyplot as pl
@@ -187,7 +188,7 @@ def CalcInitialModel(nloads,CTODs,
             for XCnt in range(Xposvecs.shape[1]):
                 #if XCnt != 1:
                 #    continue
-                Xposvec=Xposvecs[:,XCnt]
+                Xposvec=copy.copy(Xposvecs[:,XCnt])
                 
 
                 if relshift_firstimg_lowerleft_corner_x_ref is not None:
@@ -380,6 +381,10 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     assert(k==3)
     seed_param=(c[0],c[1],c[2],c[3],np.median(c5_vals))
     
+    fitplot=None
+    pickableplot=None
+    c5plot=None
+
     # Plot diagnostics
     if doplots:
 
@@ -388,7 +393,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
 
         from matplotlib import pyplot as pl
 
-        pl.figure()
+        fitplot=pl.figure()
         pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
                 xt_vals*1e3,avg_load_vals/1e6,'o',
                 fittedvals*1e3,sigmarange/1e6,'-')
@@ -399,7 +404,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pl.grid()
 
         
-        fig=pl.figure()
+        pickableplot=pl.figure()
         pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',picker=5)
                 #xt_vals*1e3,avg_load_vals/1e6,'o',
                 #fittedvals*1e3,sigmarange/1e6,'-')
@@ -415,7 +420,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
             print("got indices: %s; side=%d; XPositions[0,1][0]=%f" % (str(indices),side,XPositions[0,1][0]))
 
             for index in indices:
-                pl.figure()
+                newfig=pl.figure()
 
                 idx1=idx1_unwrapped[index]
                 idx2=idx2_unwrapped[index]
@@ -430,12 +435,13 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
                 pl.ylabel('CTOD and initial model (um)')
                 pl.title('First end of crack: Load1 = %f MPa; load2 = %f MPa' % (load1[idx1,idx2,0]/1.e6,load2[idx1,idx2,0]/1.e6))
                 pl.grid()
-                
+                #newfig.canvas.draw_idle()
+                pl.show()
                 pass
             pass
-        fig.canvas.mpl_connect('pick_event',dicfitpick)
+        pickableplot.canvas.mpl_connect('pick_event',dicfitpick)
         
-        pl.figure()
+        c5plot=pl.figure()
         pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
                 avg_load_vals/1e6,c5_vals,'o')
         pl.xlabel('Load (MPa)')
@@ -444,7 +450,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pass
 
 
-    return (minload,maxload,seed_param)
+    return (minload,maxload,seed_param,(fitplot,pickableplot,c5plot))
     
 def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
