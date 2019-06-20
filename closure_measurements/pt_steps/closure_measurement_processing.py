@@ -117,6 +117,23 @@ def run(_xmldoc,_element,
     tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
     tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
 
+    # Force tippos_side1 to decrease monotonically with increasing output_load
+    tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+    while np.count_nonzero(tippos_side1_increase):
+        toobig_indices=np.where(tippos_side1_increase)[0]+1
+        tippos_side1[toobig_indices]=tippos_side1[toobig_indices-1]
+        tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+        pass
+
+
+    # Force tippos_side2 to increase monotonically with increasing output_load
+    tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+    while np.count_nonzero(tippos_side2_decrease):
+        toosmall_indices=np.where(tippos_side2_decrease)[0]+1
+        tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
+        tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+        pass
+
     closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     for loadcnt in range(num_output_loads):
         newel = closureprofile_side1.addsimpleelement(closureprofile_side1.getroot(),"dc:tippos",(tippos_side1[loadcnt],"m"))
@@ -146,7 +163,7 @@ def run(_xmldoc,_element,
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
     pl.ylabel('Applied load (MPa)')
-    pl.legend(('Side 1','Side 2'))
+    pl.legend(('Side 1','Side 2'),loc="best")
     pl.title(dc_specimen_str)
     pl.savefig(closureprofile_plot_href.getpath(),dpi=300)
 

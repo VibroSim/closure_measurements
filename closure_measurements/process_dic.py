@@ -399,7 +399,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
                 fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'))
+        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'),loc="best")
         pl.title('xt')
         pl.grid()
 
@@ -587,7 +587,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
                 full_model.full_model_xt(full_model_params,sigmarange,minload,maxload)*1e3,sigmarange/1.e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'))
+        pl.legend(('All DIC fit data','yt within data range and good SNR','initial fit to yt within data range and good SNR','full model'),loc="best")
         pl.title('xt')
         pl.grid()
 
