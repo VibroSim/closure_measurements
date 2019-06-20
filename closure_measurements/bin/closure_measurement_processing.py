@@ -96,10 +96,10 @@ def main(args=None):
      ROI_out_arrays,
      CrackCenterX,TipCoords1,TipCoords2,
      ROI_dic_yminidx,ROI_dic_ymaxidx,
-     relshift_firstimg_lowerright_corner_x_ref,
-     relshift_firstimg_lowerright_corner_x_diff,
-     relshift_firstimg_lowerright_corner_y_ref,
-     relshift_firstimg_lowerright_corner_y_diff) = load_dgs(dgsfilename)
+     relshift_firstimg_lowerleft_corner_x_ref,
+     relshift_firstimg_lowerleft_corner_x_diff,
+     relshift_firstimg_lowerleft_corner_y_ref,
+     relshift_firstimg_lowerleft_corner_y_diff) = load_dgs(dgsfilename)
 
 
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)

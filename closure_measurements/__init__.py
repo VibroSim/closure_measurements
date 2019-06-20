@@ -1,3 +1,7 @@
+import sys
+import os
+import os.path
+
 try:
     # py2.x
     from urllib import pathname2url

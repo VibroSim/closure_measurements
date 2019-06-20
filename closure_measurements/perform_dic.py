@@ -125,6 +125,7 @@ def dic_raw_plots(dgdfilename):
         
         Xposvec=LowerLeft_XCoordinate + np.arange(nx,dtype='d')*dx
         #Yposvec=YPosn - y0-np.arange(ny,dtype='d')*dy
+        use_y0=ybase[0]
         extent=np.array((Xposvec[0]-dx/2.0,Xposvec[-1]+dx/2.0,use_y0-dy/2.0,use_y0+ny*dy-dy/2.0,))*1e3
         fig=pl.figure()
         pl.imshow(Images[:,:,XMotionidx,maxstress_idx].T,origin='lower',extent=extent)
@@ -146,12 +147,16 @@ def execute_one_dic(params):
 
 
 def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
-                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_firstimg_lowerright_corner_x=None,relshift_firstimg_lowerright_corner_y=None,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_firstimg_lowerleft_corner_x=None,relshift_firstimg_lowerleft_corner_y=None,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
     """ Perform DIC on data already loaded into memory """
     
 
     #dgs_outfilename=os.path.splitext(dgdfilename)[0]+"_dic.dgs"
-    
+
+    nx=Images.shape[0]
+    ny=Images.shape[1]
+    nimages=Images.shape[2]
+    nloads=Images.shape[3]
 
     print("Perform_dic: Got %d %dx%d images at %d loads" % (Images.shape[2],nx,ny,nloads))
     
@@ -206,12 +211,12 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     Xinivec[...]=np.nan
 
 
-    if relshift_firstimg_lowerright_corner_x is not None:
+    if relshift_firstimg_lowerleft_corner_x is not None:
         relxmtx_ref=np.zeros((nloads,nloads),dtype='f',order='F')
         relxmtx_diff=np.zeros((nloads,nloads),dtype='f',order='F')
         pass
     
-    if relshift_firstimg_lowerright_corner_y is not None:
+    if relshift_firstimg_lowerleft_corner_y is not None:
         relymtx_ref=np.zeros((nloads,nloads),dtype='f',order='F')
         relymtx_diff=np.zeros((nloads,nloads),dtype='f',order='F')
         pass
@@ -245,16 +250,16 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
                 load1[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx2]
                 load2[idx2,idx1,XCnt]=ActualStressPosns[Xidx,idx1]
 
-                if relshift_firstimg_lowerright_corner_x is not None:
-                    relxmtx_ref[idx1,idx2]=relshift_firstimg_lowerright_corner_x[idx1]
-                    relxmtx_diff[idx1,idx2]=relshift_firstimg_lowerright_corner_x[idx2]
-                    #relxmtx_ref[idx2,idx1]=relshift_firstimg_lowerright_corner_x[idx1]
+                if relshift_firstimg_lowerleft_corner_x is not None:
+                    relxmtx_ref[idx1,idx2]=relshift_firstimg_lowerleft_corner_x[idx1]
+                    relxmtx_diff[idx1,idx2]=relshift_firstimg_lowerleft_corner_x[idx2]
+                    #relxmtx_ref[idx2,idx1]=relshift_firstimg_lowerleft_corner_x[idx1]
                     pass
                 
-                if relshift_firstimg_lowerright_corner_y is not None:
-                    relymtx_ref[idx1,idx2]=relshift_firstimg_lowerright_corner_y[idx1]
-                    relymtx_diff[idx1,idx2]=relshift_firstimg_lowerright_corner_y[idx2]
-                    #relymtx_ref[idx2,idx1]=relshift_firstimg_lowerright_corner_y[idx1]
+                if relshift_firstimg_lowerleft_corner_y is not None:
+                    relymtx_ref[idx1,idx2]=relshift_firstimg_lowerleft_corner_y[idx1]
+                    relymtx_diff[idx1,idx2]=relshift_firstimg_lowerleft_corner_y[idx2]
+                    #relymtx_ref[idx2,idx1]=relshift_firstimg_lowerleft_corner_y[idx1]
                     pass
 
                 # DIC represents idx2 state minus idx1 state
@@ -437,9 +442,9 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumInt("ROI_dic_ymaxidx",ROI_ymaxidx//dic_scalefactor))
 
 
-    if relshift_firstimg_lowerright_corner_x is not None:
+    if relshift_firstimg_lowerleft_corner_x is not None:
        relxwfm_ref = dg.wfminfo()
-       relxwfm_ref.Name = "relshift_firstimg_lowerright_corner_x_ref"
+       relxwfm_ref.Name = "relshift_firstimg_lowerleft_corner_x_ref"
        relxwfm_ref.data = relxmtx_ref
        relxwfm_ref.dimlen = np.array(relxmtx_ref.shape)
        relxwfm_ref.ndim=2
@@ -449,10 +454,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
        dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("Units2","Unitless"))
        dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("AmplUnits","meters"))
        dgm.AddMetaDatumWI(relxwfm_ref,dgm.CreateMetaDatumStr("AmplCoord","X shift"))
-       outwfmdict["relshift_firstimg_lowerright_corner_x_ref"]=relxwfm_ref
+       outwfmdict["relshift_firstimg_lowerleft_corner_x_ref"]=relxwfm_ref
 
        relxwfm_diff = dg.wfminfo()
-       relxwfm_diff.Name = "relshift_firstimg_lowerright_corner_x_diff"
+       relxwfm_diff.Name = "relshift_firstimg_lowerleft_corner_x_diff"
        relxwfm_diff.data = relxmtx_diff
        relxwfm_diff.dimlen = np.array(relxmtx_diff.shape)
        relxwfm_diff.ndim=2
@@ -462,13 +467,13 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
        dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("Units2","Unitless"))
        dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("AmplUnits","meters"))
        dgm.AddMetaDatumWI(relxwfm_diff,dgm.CreateMetaDatumStr("AmplCoord","X shift"))
-       outwfmdict["relshift_firstimg_lowerright_corner_x_diff"]=relxwfm_diff
+       outwfmdict["relshift_firstimg_lowerleft_corner_x_diff"]=relxwfm_diff
 
-     pass
+       pass
 
-    if relshift_firstimg_lowerright_corner_y is not None:
+    if relshift_firstimg_lowerleft_corner_y is not None:
         relywfm_ref = dg.wfminfo()
-        relywfm_ref.Name = "relshift_firstimg_lowerright_corner_y_ref"
+        relywfm_ref.Name = "relshift_firstimg_lowerleft_corner_y_ref"
         relywfm_ref.data = relymtx_ref
         relywfm_ref.dimlen = np.array(relymtx_ref.shape)
         relywfm_ref.ndim=2
@@ -478,10 +483,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("Units2","Unitless"))
         dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("AmplUnits","meters"))
         dgm.AddMetaDatumWI(relywfm_ref,dgm.CreateMetaDatumStr("AmplCoord","Y shift"))
-        outwfmdict["relshift_firstimg_lowerright_corner_y_ref"]=relywfm_ref
+        outwfmdict["relshift_firstimg_lowerleft_corner_y_ref"]=relywfm_ref
 
         relywfm_diff = dg.wfminfo()
-        relywfm_diff.Name = "relshift_firstimg_lowerright_corner_y_diff"
+        relywfm_diff.Name = "relshift_firstimg_lowerleft_corner_y_diff"
         relywfm_diff.data = relymtx_diff
         relywfm_diff.dimlen = np.array(relymtx_diff.shape)
         relywfm_diff.ndim=2
@@ -491,13 +496,13 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("Units2","Unitless"))
         dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("AmplUnits","meters"))
         dgm.AddMetaDatumWI(relywfm_diff,dgm.CreateMetaDatumStr("AmplCoord","Y shift"))
-        outwfmdict["relshift_firstimg_lowerright_corner_y_diff"]=relywfm_diff
+        outwfmdict["relshift_firstimg_lowerleft_corner_y_diff"]=relywfm_diff
         pass
 
     
     # Add extra waveforms provided by caller
-    for key in extrawfmdict:
-        outwfmdict[key]=extrawfmdict[key]
+    for key in extra_wfmdict:
+        outwfmdict[key]=extra_wfmdict[key]
         pass
     
     

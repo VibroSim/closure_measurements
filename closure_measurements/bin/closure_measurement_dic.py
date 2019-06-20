@@ -45,13 +45,13 @@ def main(args=None):
     #dic_span=20 # formerly step... this is measured in the scaled piexels
     #dic_smoothing_window=3  # formerly window... This is measured in the scaled pixels
     
-    #TipCoords1=(0.000339087,0.00317911) # should have smaller value of y
+    #TipCoords1=(0.000339087,0.00317911) # should have smaller value of x
     TipCoords1 = ast.literal_eval(args[2])
-    #TipCoords2=(0.000375043,0.00690454) # Should have larger value of y
+    #TipCoords2=(0.000375043,0.00690454) # Should have larger value of x
     TipCoords2 = ast.literal_eval(args[3])
 
-    if TipCoords1[1] > TipCoords2[1]:
-        raise ValueError("Second tip coordinate should have larger value of y")
+    if TipCoords1[0] > TipCoords2[0]:
+        raise ValueError("Second tip coordinate should have larger value of x")
     
     #YRange=(.15e-3,.8e-3)
     YRange = ast.literal_eval(args[4])
