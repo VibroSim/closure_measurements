@@ -84,6 +84,7 @@ setup(name="closure_measurements",
       zip_safe=False,
       packages=["closure_measurements",
                 "closure_measurements.bin"],
+      cmdclass={"install_lib": install_lib_save_version },
       #data_files=[ ("share/closure_measurements/pt_steps",pt_steps_files),]
       package_data={"closure_measurements": closure_measurements_package_files},
       entry_points={ "limatix.processtrak.step_url_search_path": [ "limatix.share.pt_steps = closure_measurements:getstepurlpath" ],

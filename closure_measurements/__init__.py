@@ -16,14 +16,14 @@ class dummy(object):
     pass
 
 pkgpath = sys.modules[dummy.__module__].__file__
-pkgdir=os.path.split(mypath)[0]
+pkgdir=os.path.split(pkgpath)[0]
 
 def getstepurlpath():
 
     return [ pathname2url(os.path.join(pkgdir,"pt_steps")) ]
 
 
-versionpath = os.path.join(pkgpath,"version.txt")
+versionpath = os.path.join(pkgdir,"version.txt")
 if os.path.exists(versionpath):
     versionfh = open(versionpath,"r")
     __version__=versionfh.read().strip()
