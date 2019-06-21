@@ -135,14 +135,14 @@ def TestRegistration(nloads,Xposvecs,u_disps,v_disps,
             for XCnt in range(Xposvecs.shape[1]):
                 Xposvec=Xposvecs[:,XCnt]
 
-                u_values = u_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt]] # only use values where ROI==1
+                u_values = u_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt].astype(np.bool)] # only use values where ROI==1
                 meanu = np.mean(u_values.ravel())
-                v_values = v_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt]] # only use values where ROI==1
+                v_values = v_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt].astype(np.bool)] # only use values where ROI==1
                 meanv = np.mean(v_values.ravel());
 
-                pred_u = relshift_firstimg_lowerleft_corner_x_diff-relshift_firstimg_lowerleft_corner_x_ref
-                pred_v = relshift_firstimg_lowerleft_corner_y_diff-relshift_firstimg_lowerleft_corner_y_ref
-
+                predu = relshift_firstimg_lowerleft_corner_x_diff[idx1,idx2]-relshift_firstimg_lowerleft_corner_x_ref[idx1,idx2]
+                predv = relshift_firstimg_lowerleft_corner_y_diff[idx1,idx2]-relshift_firstimg_lowerleft_corner_y_ref[idx1,idx2]
+                
                 print("idx1 = %d; idx2 = %d; XCnt = %d; meanu = %f um; predu = %f um; meanv= %f um; predv=%f um" % (idx1,idx2,XCnt,meanu*1e6,predu*1e6,meanv*1e6,predv*1e6))
                 pass
             pass
