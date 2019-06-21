@@ -37,7 +37,12 @@ if os.path.exists(".git"):
 
     # See if we can get a more meaningful description from "git describe"
     try:
-        version=subprocess.check_output(["git","describe"]).strip()
+        versionraw=subprocess.check_output(["git","describe","--tags","--match=v*"],stderr=subprocess.STDOUT).strip()
+        # versionraw is like v0.1.0-50-g434343
+        # for compatibility with PEP 440, change it to
+        # something like 0.1.0+50.g434343
+        matchobj=re.match(r"""v([^.]+[.][^.]+[.][^-.]+)-(.*)""",versionraw)
+        version=matchobj.group(1)+'+'+matchobj.group(2).replace("-",".")
         pass
     except subprocess.CalledProcessError:
         # Ignore error, falling back to above version string
@@ -80,6 +85,7 @@ correlate_pyx_ext.libraries = ['ncorr','opencv_core','opencv_imgproc','opencv_vi
 setup(name="closure_measurements",
       description="Inversion of crack closure from DIC measurements",
       author="Chris Giuffre and Stephen D. Holland",
+      version=version,
       # url="http://",
       zip_safe=False,
       packages=["closure_measurements",
