@@ -17,7 +17,8 @@ def run(_xmldoc,_element,
         _dest_href,
         _inputfilename,
         dc_measnum_int,
-        dc_scan_outdgd_str,
+        #dc_scan_outdgd_str,
+        dc_scan_outdgd_href,
         dc_crackpath,
         dc_coordinatetransform,
         dic_scalefactor_int=5,
@@ -55,9 +56,9 @@ def run(_xmldoc,_element,
     TipCoords2=(crackendx,crackendy)
 
     
-    scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
+    #dc_scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
 
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates) = perform_dic.load_dgd(scan_outdgd_href.getpath())    
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
 
 
     YRange=(crackminy - 2*(2*dic_radius_int + dic_span_int*dic_scalefactor_int)*dy,
@@ -86,7 +87,7 @@ def run(_xmldoc,_element,
     LowerLeft_XCoordinates += shift_firstimg_lowerleft_corner_x[0]  # !!!*** (lower-right vs. lower left???)
     ybase += shift_firstimg_lowerleft_corner_y[0]  
 
-    dgs_outfilehref = hrefv(posixpath.splitext(scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=scan_outdgd_href.leafless())
+    dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=dc_scan_outdgd_href.leafless())
 
     extra_wfmdict={}
 
