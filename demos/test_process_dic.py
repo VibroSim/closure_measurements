@@ -12,6 +12,7 @@ from closure_measurements.process_dic import Calc_CTODs as calc_CTODs_function
 from closure_measurements.process_dic import CalcInitialModel as CalcInitialModel_function
 from closure_measurements.process_dic import InitializeFullModel as InitializeFullModel_function
 from closure_measurements.process_dic import CalcFullModel as CalcFullModel_function
+from closure_measurements.process_dic import TestRegistration
 
 import pyopencl as cl
 
@@ -36,7 +37,8 @@ CalcFullModel=CalcFullModel_function
 if __name__=="__main__":
 
     #dgsfilename = "/tmp/C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
-    dgsfilename = "/tmp/C18-AFVT-011X_optical_collect_optical_data_dic.dgs"
+    #dgsfilename = "/tmp/C18-AFVT-011X_optical_collect_optical_data_dic.dgs"
+    dgsfilename = "/tmp/0000-C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
 
     YoungsModulus=113.8e9  # 113.8 GPa for Ti-6-4
     # YoungsModulus=200.0e9 # 200 GPa for In718
@@ -56,9 +58,10 @@ if __name__=="__main__":
     Symmetric_COD=True # assume a symmetric form for the COD -- appropriate when the data is from surface cracks of length 2a where the center is (roughly) a symmetry point
     
     
-    ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
-    dev = ctx.devices[0]
-
+    #ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
+    #dev = ctx.devices[0]
+    ctx = None
+    dev = None
 
     (dic_dx,dic_dy,
      dic_nx,dic_ny,
@@ -99,7 +102,7 @@ if __name__=="__main__":
      Error_side2,
      npoints_side2,
      XPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
 
     
     (minload_side1,maxload_side1,seed_param_side1,fm_plots) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
