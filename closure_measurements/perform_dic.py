@@ -182,7 +182,12 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     # XRange selects images  where the right hand edge of each image
     # must be to the right of the left tip, and the left hand edge of
     # each image must be to the left of the right tip
-    XRange=(LowerLeft_XCoordinates+nx*dx > TipCoords1[0]) & (LowerLeft_XCoordinates < TipCoords2[0])
+    if len(LowerLeft_XCoordinates.shape) > 1:
+        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1) < TipCoords2[0])
+        pass
+    else:
+        XRange=(LowerLeft_XCoordinates+nx*dx > TipCoords1[0]) & (LowerLeft_XCoordinates < TipCoords2[0])
+        pass
     XRangeSize=np.count_nonzero(XRange)
 
     dic_ny = ny//dic_scalefactor
@@ -204,10 +209,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     load2[...]=np.nan
     
     XRange_idxs = np.where(XRange)[0]
-    Xposvecs=np.ones((dic_nx,XRangeSize),dtype='f',order='F')
+    Xposvecs=np.ones((dic_nx,XRangeSize,nloads),dtype='f',order='F')
     Xposvecs[...]=np.nan
 
-    Xinivec = np.ones(XRangeSize,dtype='f')
+    Xinivec = np.ones((XRangeSize,nloads),dtype='f')
     Xinivec[...]=np.nan
 
 
@@ -228,12 +233,18 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         #if YCnt != 1:
         #    continue
         Xidx = XRange_idxs[XCnt]
-        LowerLeft_XCoordinate = LowerLeft_XCoordinates[Xidx]
-
-        Xinivec[XCnt]=LowerLeft_XCoordinate
-        Xposvec=Xinivec[XCnt] + np.arange(nx//dic_scalefactor,dtype='d')*dx*dic_scalefactor
-        Xposvecs[:,XCnt]=Xposvec
         for idx1 in range(nloads):
+
+            if len(LowerLeft_XCoordinates.shape)==1:  # just single dimension -- no load dependence
+                LowerLeft_XCoordinate = LowerLeft_XCoordinates[Xidx]
+                pass
+            else:
+                LowerLeft_XCoordinate = LowerLeft_XCoordinates[Xidx,idx1]
+                pass
+            Xinivec[XCnt,idx1]=LowerLeft_XCoordinate
+            Xposvec=Xinivec[XCnt,idx1] + np.arange(nx//dic_scalefactor,dtype='d')*dx*dic_scalefactor
+            Xposvecs[:,XCnt,idx1]=Xposvec
+
             #if idx1 != 0:
             #    continue
 
@@ -312,7 +323,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         outwfmdict["u_disps%.3d" % (XCnt)].ndim=4
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord1","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units1","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",Xinivec[XCnt]))
+        dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",np.mean(Xinivec[XCnt,:])))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step1",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["u_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
@@ -334,7 +345,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         outwfmdict["v_disps%.3d" % (XCnt)].ndim=4
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord1","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units1","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",Xinivec[XCnt]))
+        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",np.mean(Xinivec[XCnt],:)))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step1",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
@@ -356,7 +367,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         outwfmdict["ROI_out%.3d" % (XCnt)].ndim=4
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord1","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units1","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",Xinivec[XCnt]))
+        dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",np.mean(Xinivec[XCnt,:])))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step1",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["ROI_out%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))
@@ -374,7 +385,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     outwfmdict["Xposvecs"].Name="Xposvecs"
     outwfmdict["Xposvecs"].data=Xposvecs
     outwfmdict["Xposvecs"].dimlen=np.array(Xposvecs.shape)
-    outwfmdict["Xposvecs"].ndim=2
+    outwfmdict["Xposvecs"].ndim=3
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Coord1","X Position"))
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Units1","meters"))
     #dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumDbl("IniVal1",x0))
@@ -382,6 +393,8 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumDbl("Step1",dx*dic_scalefactor))
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Coord2","Image index"))
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Units2","Unitless"))
+    dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Coord3","Load index"))
+    dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("Units3","Unitless"))
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("AmplCoord","X shiftedscaled"))
     dgm.AddMetaDatumWI(outwfmdict["Xposvecs"],dgm.CreateMetaDatumStr("AmplUnits","meters"))
 
@@ -390,9 +403,11 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     outwfmdict["Xinivec"].Name="Xinivec"
     outwfmdict["Xinivec"].data=Xinivec
     outwfmdict["Xinivec"].dimlen=np.array(Xinivec.shape)
-    outwfmdict["Xinivec"].ndim=1
+    outwfmdict["Xinivec"].ndim=2
     dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("Coord1","Image index"))
     dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("Units1","Unitless"))
+    dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("Coord2","Load index"))
+    dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("Units2","Unitless"))
     dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("AmplCoord","Y initial"))
     dgm.AddMetaDatumWI(outwfmdict["Xinivec"],dgm.CreateMetaDatumStr("AmplUnits","meters"))
 

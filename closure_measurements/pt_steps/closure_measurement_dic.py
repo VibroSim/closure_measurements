@@ -58,33 +58,60 @@ def run(_xmldoc,_element,
     
     #dc_scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
 
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
 
+    # LowerLeft_XCoordinates_MotionController are the
+    # X coordinates of the lower left of each image, as
+    # measured by the motion controller.
+    # The first entry is defined to be 0 (reference motion position)
+    # and values decrease for increasing motion controller "Y" position.
+
+    # In this case, since we have the registration data from
+    # the ExtractAndStitchOpticalImageJ alignment,
+    # we can evaluate more accurate values from the stitching positions.
+    #
+    # ... but this means our LowerLeft_XCoordinates, instead of
+    # just being a function of position, will be a function of
+    # position and load (alignment slightly different at each load)
+    
+    
+    numposns = YMotionPosns.shape[0]
 
     YRange=(crackminy - 2*(2*dic_radius_int + dic_span_int*dic_scalefactor_int)*dy,
             crackmaxy + 2*(2*dic_radius_int + dic_span_int*dic_scalefactor_int)*dy)
     
     shift_firstimg_lowerleft_corner_x=[]
     shift_firstimg_lowerleft_corner_y=[]
+
+    registrationshift_x = np.zeros((numposns,ActualStressPosns.shape[1]),dtype='d')
+    registrationshift_y = np.zeros((numposns,ActualStressPosns.shape[1]),dtype='d')
     # Iterate throuh the various stress positions
     for stresscnt in range(ActualStressPosns.shape[1]):
 
         # Load in the registration shift for this stress level.
         shift_firstimg_lowerleft_corner_x.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_x[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
         shift_firstimg_lowerleft_corner_y.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
-        
+
+        for posncnt in range(numposns):
+            registrationshift_x[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_x[stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
+            registrationshift_y[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_y[stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
+            pass
 
         pass
 
+    # build LowerLeft_XCoordinates from alignment data
+    # indexed by (posncnt,stresscnt)... positions relative to first image @ first position, first stress. 
+    LowerLeft_XCoordinates = (registrationshift_x-registrationshift_x[0,:])*dx  # subtract out shift from first image at this stress level
+    
     relshift_firstimg_lowerleft_corner_x = np.array(shift_firstimg_lowerleft_corner_x,dtype='d')-shift_firstimg_lowerleft_corner_x[0]
     relshift_firstimg_lowerleft_corner_y = np.array(shift_firstimg_lowerleft_corner_y,dtype='d')-shift_firstimg_lowerleft_corner_y[0]
 
-
+    
     # Now (shift_firstimg_lowerleft_corner_x[0],shift_firstimg_lowerleft_corner_y[0]) are the baseline shift (first load level)
     # and relshift_firstimg_lowerleft_corner_x and relshift_firstimg_lowerleft_corner_y are relative to them.
     
     # Add the shifts into LowerLeft_XCoordinates and ybase
-    LowerLeft_XCoordinates += shift_firstimg_lowerleft_corner_x[0]  # !!!*** (lower-right vs. lower left???)
+    LowerLeft_XCoordinates += shift_firstimg_lowerleft_corner_x[0]
     ybase += shift_firstimg_lowerleft_corner_y[0]  
 
     dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=dc_scan_outdgd_href.leafless())
