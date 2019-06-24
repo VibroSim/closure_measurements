@@ -106,10 +106,17 @@ def Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_
     CTODs=np.zeros((dic_nx,nloads,nloads,XRangeSize),dtype='d')
     for XCnt in range(XRangeSize):
 
-        Xposvec=Xposvecs[:,XCnt]
         for idx1 in range(nloads):
             #if idx1 != 0:
             #   continue
+
+            if len(Xposvecs.shape)==2:
+                Xposvec=Xposvecs[:,XCnt] # backward compatibility
+                pass
+            else:
+                Xposvec=Xposvecs[:,XCnt,idx1] 
+                pass
+            
             for idx2 in range(idx1+1,nloads):
 
                 #if idx2 != nloads-1:
@@ -133,7 +140,7 @@ def TestRegistration(nloads,Xposvecs,u_disps,v_disps,
         for idx2 in range(idx1+1,nloads):
             
             for XCnt in range(Xposvecs.shape[1]):
-                Xposvec=Xposvecs[:,XCnt]
+                Xposvec=Xposvecs[:,XCnt,idx1]
 
                 u_values = u_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt].astype(np.bool)] # only use values where ROI==1
                 meanu = np.mean(u_values.ravel())
@@ -188,7 +195,12 @@ def CalcInitialModel(nloads,CTODs,
             for XCnt in range(Xposvecs.shape[1]):
                 #if XCnt != 1:
                 #    continue
-                Xposvec=copy.copy(Xposvecs[:,XCnt])
+                if len(Xposvecs.shape)==2:
+                    Xposvec=copy.copy(Xposvecs[:,XCnt]) # backward compatibility
+                    pass
+                else:
+                    Xposvec=copy.copy(Xposvecs[:,XCnt,idx1])
+                    pass
                 
 
                 if relshift_firstimg_lowerleft_corner_x_ref is not None:
