@@ -345,7 +345,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         outwfmdict["v_disps%.3d" % (XCnt)].ndim=4
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord1","X Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units1","meters"))
-        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",np.mean(Xinivec[XCnt],:)))
+        dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("IniVal1",np.mean(Xinivec[XCnt,:])))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumDbl("Step1",dx*dic_scalefactor))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Coord2","Y Position"))
         dgm.AddMetaDatumWI(outwfmdict["v_disps%.3d" % (XCnt)],dgm.CreateMetaDatumStr("Units2","meters"))

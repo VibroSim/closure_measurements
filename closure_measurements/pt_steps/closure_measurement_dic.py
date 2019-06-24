@@ -93,8 +93,8 @@ def run(_xmldoc,_element,
         shift_firstimg_lowerleft_corner_y.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
 
         for posncnt in range(numposns):
-            registrationshift_x[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_x[stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
-            registrationshift_y[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_y[stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
+            registrationshift_x[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_x[@stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
+            registrationshift_y[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_y[@stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
             pass
 
         pass
