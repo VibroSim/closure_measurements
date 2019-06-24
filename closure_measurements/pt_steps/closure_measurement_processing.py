@@ -26,10 +26,13 @@ def run(_xmldoc,_element,
         dc_coordinatetransform,
         dc_spcYoungsModulus_numericunits,
         dc_specimen_str,
-        dic_span_int=20,
-        dic_smoothing_window_int=3,
-        dic_tip_tolerance_numericunits=numericunitsv(100e-6,"m"),
-        min_dic_points_per_meter_numericunits=numericunitsv(40000,"1/m"),
+        dc_dic_span_int=20,
+        dc_dic_smoothing_window_int=3,
+        # NOTE: Default tip tolerance is smaller here than in command line version
+        # because typically this is used with data that has gone through a registration
+        # process and therefore has tighter tolerances
+        dc_dic_tip_tolerance_numericunits=numericunitsv(50e-6,"m"),
+        dc_min_dic_points_per_meter_numericunits=numericunitsv(40000,"1/m"),
         dc_symmetric_cod_bool=True,
         debug_bool=False):
     
@@ -44,7 +47,7 @@ def run(_xmldoc,_element,
     # this processtrak step shall be in stitched image
     # coordinates (see ExtractAndSitchOpticalImageJ.py _aligned_measnum.dgs and RegisterOpticalData.py)
 
-    min_dic_points_per_meter=min_dic_points_per_meter_numericunits.value("1/m")
+    min_dic_points_per_meter=dc_min_dic_points_per_meter_numericunits.value("1/m")
 
     # To get fiducial coordinates, add xshift and yshift.
     
@@ -55,7 +58,7 @@ def run(_xmldoc,_element,
     
     #keypoints = _opxmldoc.xpathcontext(dc_crackpath, 'dc:segment/dc:keypoint')
 
-    tip_tolerance = dic_tip_tolerance_numericunits.value("m")
+    tip_tolerance = dc_dic_tip_tolerance_numericunits.value("m")
     
     (dic_dx,dic_dy,
      dic_nx,dic_ny,
@@ -73,7 +76,7 @@ def run(_xmldoc,_element,
 
 
 
-    CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span_int,dic_smoothing_window_int)
+    CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dc_dic_span_int,dc_dic_smoothing_window_int)
 
     (InitialModels_side1,
      InitialCoeffs_side1,
@@ -83,7 +86,7 @@ def run(_xmldoc,_element,
      CTODValues_side1) = CalcInitialModel(nloads,CTODs,
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span_int,
+                                          dic_dy,dc_dic_span_int,
                                           dc_symmetric_cod_bool,1,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
@@ -98,7 +101,7 @@ def run(_xmldoc,_element,
      CTODValues_side2) = CalcInitialModel(nloads,CTODs,
                                           load1,load2,
                                           Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span_int,
+                                          dic_dy,dc_dic_span_int,
                                           dc_symmetric_cod_bool,2,YoungsModulus,
                                           relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
