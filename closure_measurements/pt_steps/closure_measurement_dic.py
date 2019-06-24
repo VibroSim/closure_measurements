@@ -63,7 +63,7 @@ def run(_xmldoc,_element,
     # LowerLeft_XCoordinates_MotionController are the
     # X coordinates of the lower left of each image, as
     # measured by the motion controller.
-    # The first entry is defined to be 0 (reference motion position)
+    # The middle entry is defined to be 0 (reference motion position)
     # and values decrease for increasing motion controller "Y" position.
 
     # In this case, since we have the registration data from
@@ -80,8 +80,8 @@ def run(_xmldoc,_element,
     YRange=(crackminy - 2*(2*dic_radius_int + dic_span_int*dic_scalefactor_int)*dy,
             crackmaxy + 2*(2*dic_radius_int + dic_span_int*dic_scalefactor_int)*dy)
     
-    shift_firstimg_lowerleft_corner_x=[]
-    shift_firstimg_lowerleft_corner_y=[]
+    shift_middleimg_lowerleft_corner_x=[]
+    shift_middleimg_lowerleft_corner_y=[]
 
     registrationshift_x = np.zeros((numposns,ActualStressPosns.shape[1]),dtype='d')
     registrationshift_y = np.zeros((numposns,ActualStressPosns.shape[1]),dtype='d')
@@ -89,8 +89,8 @@ def run(_xmldoc,_element,
     for stresscnt in range(ActualStressPosns.shape[1]):
 
         # Load in the registration shift for this stress level.
-        shift_firstimg_lowerleft_corner_x.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_x[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
-        shift_firstimg_lowerleft_corner_y.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_firstimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
+        shift_middleimg_lowerleft_corner_x.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_middleimg_lowerleft_corner_x[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
+        shift_middleimg_lowerleft_corner_y.append(numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:shift_middleimg_lowerleft_corner_y[@stepnum_stress="%d"]' % (stresscnt))).value('m'))
 
         for posncnt in range(numposns):
             registrationshift_x[posncnt,stresscnt] = numericunitsv.fromxml(_xmldoc, _xmldoc.xpathsinglecontext(_element, 'dc:registrationshift_x[@stepnum_posn="%d" and @stepnum_stress="%d"]' % (posncnt,stresscnt))).value('pixels')
@@ -100,19 +100,19 @@ def run(_xmldoc,_element,
         pass
 
     # build LowerLeft_XCoordinates from alignment data
-    # indexed by (posncnt,stresscnt)... positions relative to first image @ first position, first stress. 
-    LowerLeft_XCoordinates = (registrationshift_x-registrationshift_x[0,:])*dx  # subtract out shift from first image at this stress level
+    # indexed by (posncnt,stresscnt)... positions relative to  image @ middle position, first stress. 
+    LowerLeft_XCoordinates = (registrationshift_x-registrationshift_x[numposns//2,:])*dx  # subtract out shift from middle image at this stress level
     
-    relshift_firstimg_lowerleft_corner_x = np.array(shift_firstimg_lowerleft_corner_x,dtype='d')-shift_firstimg_lowerleft_corner_x[0]
-    relshift_firstimg_lowerleft_corner_y = np.array(shift_firstimg_lowerleft_corner_y,dtype='d')-shift_firstimg_lowerleft_corner_y[0]
+    relshift_middleimg_lowerleft_corner_x = np.array(shift_middleimg_lowerleft_corner_x,dtype='d')-shift_middleimg_lowerleft_corner_x[0]
+    relshift_middleimg_lowerleft_corner_y = np.array(shift_middleimg_lowerleft_corner_y,dtype='d')-shift_middleimg_lowerleft_corner_y[0]
 
     
-    # Now (shift_firstimg_lowerleft_corner_x[0],shift_firstimg_lowerleft_corner_y[0]) are the baseline shift (first load level)
-    # and relshift_firstimg_lowerleft_corner_x and relshift_firstimg_lowerleft_corner_y are relative to them.
+    # Now (shift_middleimg_lowerleft_corner_x[0],shift_middleimg_lowerleft_corner_y[0]) are the baseline shift (first load level)
+    # and relshift_middleimg_lowerleft_corner_x and relshift_middleimg_lowerleft_corner_y are relative to them.
     
     # Add the shifts into LowerLeft_XCoordinates and ybase
-    LowerLeft_XCoordinates += shift_firstimg_lowerleft_corner_x[0]
-    ybase += shift_firstimg_lowerleft_corner_y[0]  
+    LowerLeft_XCoordinates += shift_middleimg_lowerleft_corner_x[0]
+    ybase += shift_middleimg_lowerleft_corner_y[0]  
 
     dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=dc_scan_outdgd_href.leafless())
 
@@ -136,8 +136,8 @@ def run(_xmldoc,_element,
      dic_dx,dic_dy)=execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
                                             dgs_outfilehref.getpath(),dic_scalefactor_int,dic_radius_int,TipCoords1,TipCoords2,YRange,
                                             extra_wfmdict=extra_wfmdict,
-                                            relshift_firstimg_lowerleft_corner_x=relshift_firstimg_lowerleft_corner_x,
-                                            relshift_firstimg_lowerleft_corner_y=relshift_firstimg_lowerleft_corner_y,
+                                            relshift_middleimg_lowerleft_corner_x=relshift_middleimg_lowerleft_corner_x,
+                                            relshift_middleimg_lowerleft_corner_y=relshift_middleimg_lowerleft_corner_y,
                                             n_threads=n_threads,processpool=processpool,debug=debug_bool)
     
     

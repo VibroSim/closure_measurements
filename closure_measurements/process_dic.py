@@ -62,27 +62,27 @@ def load_dgs(dgsfilename):
     ROI_dic_ymaxidx=dgm.GetMetaDatumLInt(metadatadict,"ROI_dic_ymaxidx",0)
 
 
-    relshift_firstimg_lowerleft_corner_x_ref = None
-    relshift_firstimg_lowerleft_corner_x_diff = None
-    relshift_firstimg_lowerleft_corner_y_ref = None
-    relshift_firstimg_lowerleft_corner_y_diff = None
+    relshift_middleimg_lowerleft_corner_x_ref = None
+    relshift_middleimg_lowerleft_corner_x_diff = None
+    relshift_middleimg_lowerleft_corner_y_ref = None
+    relshift_middleimg_lowerleft_corner_y_diff = None
 
-    if "relshift_firstimg_lowerleft_corner_x_ref" in wfmdict:
-        relshift_firstimg_lowerleft_corner_x_ref = wfmdict["relshift_firstimg_lowerleft_corner_x_ref"].data
+    if "relshift_middleimg_lowerleft_corner_x_ref" in wfmdict:
+        relshift_middleimg_lowerleft_corner_x_ref = wfmdict["relshift_middleimg_lowerleft_corner_x_ref"].data
         pass
 
-    if "relshift_firstimg_lowerleft_corner_x_diff" in wfmdict:
-        relshift_firstimg_lowerleft_corner_x_diff = wfmdict["relshift_firstimg_lowerleft_corner_x_diff"].data
+    if "relshift_middleimg_lowerleft_corner_x_diff" in wfmdict:
+        relshift_middleimg_lowerleft_corner_x_diff = wfmdict["relshift_middleimg_lowerleft_corner_x_diff"].data
         pass
 
     
     
-    if "relshift_firstimg_lowerleft_corner_y_ref" in wfmdict:
-        relshift_firstimg_lowerleft_corner_y_ref = wfmdict["relshift_firstimg_lowerleft_corner_y_ref"].data
+    if "relshift_middleimg_lowerleft_corner_y_ref" in wfmdict:
+        relshift_middleimg_lowerleft_corner_y_ref = wfmdict["relshift_middleimg_lowerleft_corner_y_ref"].data
         pass
 
-    if "relshift_firstimg_lowerleft_corner_y_diff" in wfmdict:
-        relshift_firstimg_lowerleft_corner_y_diff = wfmdict["relshift_firstimg_lowerleft_corner_y_diff"].data
+    if "relshift_middleimg_lowerleft_corner_y_diff" in wfmdict:
+        relshift_middleimg_lowerleft_corner_y_diff = wfmdict["relshift_middleimg_lowerleft_corner_y_diff"].data
         pass
 
     return (dic_dx,dic_dy,
@@ -94,10 +94,10 @@ def load_dgs(dgsfilename):
             ROI_out_arrays,
             CrackCenterX,TipCoords1,TipCoords2,
             ROI_dic_yminidx,ROI_dic_ymaxidx,
-            relshift_firstimg_lowerleft_corner_x_ref,
-            relshift_firstimg_lowerleft_corner_x_diff,
-            relshift_firstimg_lowerleft_corner_y_ref,
-            relshift_firstimg_lowerleft_corner_y_diff)
+            relshift_middleimg_lowerleft_corner_x_ref,
+            relshift_middleimg_lowerleft_corner_x_diff,
+            relshift_middleimg_lowerleft_corner_y_ref,
+            relshift_middleimg_lowerleft_corner_y_diff)
 
 
 
@@ -132,10 +132,10 @@ def Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_
 
 def TestRegistration(nloads,Xposvecs,u_disps,v_disps,
                      ROI_out_arrays,
-                     relshift_firstimg_lowerleft_corner_x_ref=None,
-                     relshift_firstimg_lowerleft_corner_x_diff=None,
-                     relshift_firstimg_lowerleft_corner_y_ref=None,
-                     relshift_firstimg_lowerleft_corner_y_diff=None):
+                     relshift_middleimg_lowerleft_corner_x_ref=None,
+                     relshift_middleimg_lowerleft_corner_x_diff=None,
+                     relshift_middleimg_lowerleft_corner_y_ref=None,
+                     relshift_middleimg_lowerleft_corner_y_diff=None):
     for idx1 in range(nloads):
         for idx2 in range(idx1+1,nloads):
             
@@ -147,8 +147,8 @@ def TestRegistration(nloads,Xposvecs,u_disps,v_disps,
                 v_values = v_disps[:,:,idx1,idx2,XCnt][ROI_out_arrays[:,:,idx1,idx2,XCnt].astype(np.bool)] # only use values where ROI==1
                 meanv = np.mean(v_values.ravel());
 
-                predu = -(relshift_firstimg_lowerleft_corner_x_diff[idx1,idx2]-relshift_firstimg_lowerleft_corner_x_ref[idx1,idx2])
-                predv = -(relshift_firstimg_lowerleft_corner_y_diff[idx1,idx2]-relshift_firstimg_lowerleft_corner_y_ref[idx1,idx2])
+                predu = -(relshift_middleimg_lowerleft_corner_x_diff[idx1,idx2]-relshift_middleimg_lowerleft_corner_x_ref[idx1,idx2])
+                predv = -(relshift_middleimg_lowerleft_corner_y_diff[idx1,idx2]-relshift_middleimg_lowerleft_corner_y_ref[idx1,idx2])
                 
                 print("idx1 = %d; idx2 = %d; XCnt = %d; meanu = %f um; predu = %f um; meanv= %f um; predv=%f um" % (idx1,idx2,XCnt,meanu*1e6,predu*1e6,meanv*1e6,predv*1e6))
                 pass
@@ -161,7 +161,7 @@ def CalcInitialModel(nloads,CTODs,
                      Xposvecs,CrackCenterX,dic_dy,
                      dic_span,Symmetric_COD,side,
                      YoungsModulus,
-                     relshift_firstimg_lowerleft_corner_x_ref=None,
+                     relshift_middleimg_lowerleft_corner_x_ref=None,
                      nominal_length=2e-3,nominal_stress=50e6,doplots=False):
     """ side=1 (smaller X values) or side=2 (larger X values)"""
     
@@ -203,9 +203,9 @@ def CalcInitialModel(nloads,CTODs,
                     pass
                 
 
-                if relshift_firstimg_lowerleft_corner_x_ref is not None:
+                if relshift_middleimg_lowerleft_corner_x_ref is not None:
                     # For this load case we have a particular registration correction to apply
-                    Xposvec += relshift_firstimg_lowerleft_corner_x_ref[idx1,idx2]
+                    Xposvec += relshift_middleimg_lowerleft_corner_x_ref[idx1,idx2]
                     pass
 
                 load_diff = load2[idx1,idx2,XCnt]-load1[idx1,idx2,XCnt]

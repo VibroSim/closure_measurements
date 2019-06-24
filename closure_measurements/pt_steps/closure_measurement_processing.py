@@ -69,10 +69,10 @@ def run(_xmldoc,_element,
      ROI_out_arrays,
      CrackCenterX,TipCoords1,TipCoords2,
      ROI_dic_yminidx,ROI_dic_ymaxidx,
-     relshift_firstimg_lowerleft_corner_x_ref,
-     relshift_firstimg_lowerleft_corner_x_diff,
-     relshift_firstimg_lowerleft_corner_y_ref,
-     relshift_firstimg_lowerleft_corner_y_diff) = load_dgs(dc_scan_outdic_href.getpath())
+     relshift_middleimg_lowerleft_corner_x_ref,
+     relshift_middleimg_lowerleft_corner_x_diff,
+     relshift_middleimg_lowerleft_corner_y_ref,
+     relshift_middleimg_lowerleft_corner_y_diff) = load_dgs(dc_scan_outdic_href.getpath())
 
 
 
@@ -88,7 +88,7 @@ def run(_xmldoc,_element,
                                           Xposvecs,CrackCenterX,
                                           dic_dy,dc_dic_span_int,
                                           dc_symmetric_cod_bool,1,YoungsModulus,
-                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
 
@@ -103,7 +103,7 @@ def run(_xmldoc,_element,
                                           Xposvecs,CrackCenterX,
                                           dic_dy,dc_dic_span_int,
                                           dc_symmetric_cod_bool,2,YoungsModulus,
-                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=False)
 

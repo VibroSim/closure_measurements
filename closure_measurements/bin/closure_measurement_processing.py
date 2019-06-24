@@ -108,10 +108,10 @@ def main(args=None):
      ROI_out_arrays,
      CrackCenterX,TipCoords1,TipCoords2,
      ROI_dic_yminidx,ROI_dic_ymaxidx,
-     relshift_firstimg_lowerleft_corner_x_ref,
-     relshift_firstimg_lowerleft_corner_x_diff,
-     relshift_firstimg_lowerleft_corner_y_ref,
-     relshift_firstimg_lowerleft_corner_y_diff) = load_dgs(dgsfilename)
+     relshift_middleimg_lowerleft_corner_x_ref,
+     relshift_middleimg_lowerleft_corner_x_diff,
+     relshift_middleimg_lowerleft_corner_y_ref,
+     relshift_middleimg_lowerleft_corner_y_diff) = load_dgs(dgsfilename)
 
 
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)
@@ -128,7 +128,7 @@ def main(args=None):
                                           Xposvecs,CrackCenterX,
                                           dic_dy,dic_span,
                                           Symmetric_COD,1,YoungsModulus,
-                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
 
@@ -143,7 +143,7 @@ def main(args=None):
                                           Xposvecs,CrackCenterX,
                                           dic_dy,dic_span,
                                           Symmetric_COD,2,YoungsModulus,
-                                          relshift_firstimg_lowerleft_corner_x_ref=relshift_firstimg_lowerleft_corner_x_ref,
+                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                           nominal_length=nominal_length,nominal_stress=nominal_stress,
                                           doplots=True)
 
@@ -158,5 +158,15 @@ def main(args=None):
     print(" ")
     print("seed_param_side2=%s" % (str(seed_param_side2)))
 
+    if relshift_middleimg_lowerleft_corner_x_ref is not None:
+        # Only applies to DIC dgs files generated through dc_process that have additional registration info added!
+        TestRegistration(nloads,Xposvecs,u_disps,v_disps,
+                         ROI_out_arrays,
+                         relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
+                         relshift_middleimg_lowerleft_corner_x_diff=relshift_middleimg_lowerleft_corner_x_diff,
+                         relshift_middleimg_lowerleft_corner_y_ref=relshift_middleimg_lowerleft_corner_y_ref,
+                         relshift_middleimg_lowerleft_corner_y_diff=relshift_middleimg_lowerleft_corner_y_diff)
+
+    
     pl.show()
     pass
