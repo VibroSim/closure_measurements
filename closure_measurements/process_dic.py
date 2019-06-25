@@ -647,11 +647,11 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
 
 def save_closureprofile(filepath,output_loads,tippos_side1,tippos_side2):
     
-    with open(closureprofile_href.getpath(),"wb") as csvfile:
+    with open(filepath,"wb") as csvfile:
         cpwriter = csv.writer(csvfile)
         cpwriter.writerow(["Opening load (Pa)","xt (side 1, m)","xt (side 2, m)"])
-        for loadcnt in range(num_output_loads):
-            cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tipppos_side2[loadcnt]])
+        for loadcnt in range(output_loads.shape[0]):
+            cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tippos_side2[loadcnt]])
             pass
         pass
     pass
