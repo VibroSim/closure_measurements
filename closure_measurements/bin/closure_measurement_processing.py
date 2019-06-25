@@ -1,6 +1,7 @@
 import sys
 import os
 import ast
+import tempfile
 
 import multiprocessing
 import numpy as np
@@ -43,6 +44,7 @@ def main(args=None):
         print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> <YoungsModulus> [DIC_span] [DIC_smoothing_window] [Tip tolerance] [min_dic_points_per_meter]")
         print(" ")
         print("Process DIC closure measurement on given .dgs DIC output file")
+        print("Resulting closure state will be written into %s" % (tempfile.gettempdir()))
         print(" ")
         print("TIP: To use the clickable plots, run through ipython, e.g.:")
         print("      ipython qtconsole &")
@@ -167,6 +169,25 @@ def main(args=None):
                          relshift_middleimg_lowerleft_corner_y_ref=relshift_middleimg_lowerleft_corner_y_ref,
                          relshift_middleimg_lowerleft_corner_y_diff=relshift_middleimg_lowerleft_corner_y_diff)
 
+        pass
+
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
+
+    outfilename = os.path.join(tempfile.gettempdir(),os.path.splitext(os.path.split(dgsfilename)[1])[0]+"_closureprofile.csv")
+    
+    process_dic.save_closureprofile(outfilename,output_loads,tippos_side1,tippos_side2)
+
+    pl.figure()
+    pl.plot(tippos_side1*1e3,output_loads/1e6,'-',
+            tippos_side2*1e3,output_loads/1e6,'-')
+    pl.grid()
+    pl.xlabel('Tip position (relative to stitched image, mm)')
+    pl.ylabel('Applied load (MPa)')
+    pl.legend(('Side 1','Side 2'),loc="best")
+    #pl.title(dc_specimen_str)
+    #pl.savefig(closureprofile_plot_href.getpath(),dpi=300)
+
+        
     
     pl.show()
     pass

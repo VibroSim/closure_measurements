@@ -115,44 +115,26 @@ def run(_xmldoc,_element,
     (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
 
 
-    minload=np.min(load1[~np.isnan(load1)].ravel())
-    maxload=np.max(load1[~np.isnan(load1)].ravel())
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
+    
+    #closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
+    #for loadcnt in range(num_output_loads):
+    #    newel = closureprofile_side1.addsimpleelement(closureprofile_side1.getroot(),"dc:tippos",(tippos_side1[loadcnt],"m"))
+    #    closureprofile_side1.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
+    #    pass
+    #closureprofile_side1_tree = xmltreev(closureprofile_side1)
+    #    
+    #closureprofile_side2 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
+    #for loadcnt in range(num_output_loads):
+    #    newel = closureprofile_side2.addsimpleelement(closureprofile_side2.getroot(),"dc:tippos",(tippos_side2[loadcnt],"m"))
+    #    closureprofile_side2.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
+    #    pass
+    #closureprofile_side2_tree = xmltreev(closureprofile_side2)
+    closureprofile_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_closureprofile.csv",contexthref=_dest_href)
 
-    output_loads=np.linspace(minload,maxload,num_output_loads)
-    tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
-    tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
+    process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads,tippos_side1,tippos_side2)
 
-    # Force tippos_side1 to decrease monotonically with increasing output_load
-    tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
-    while np.count_nonzero(tippos_side1_increase):
-        toobig_indices=np.where(tippos_side1_increase)[0]+1
-        tippos_side1[toobig_indices]=tippos_side1[toobig_indices-1]
-        tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
-        pass
-
-
-    # Force tippos_side2 to increase monotonically with increasing output_load
-    tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
-    while np.count_nonzero(tippos_side2_decrease):
-        toosmall_indices=np.where(tippos_side2_decrease)[0]+1
-        tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
-        tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
-        pass
-
-    closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
-    for loadcnt in range(num_output_loads):
-        newel = closureprofile_side1.addsimpleelement(closureprofile_side1.getroot(),"dc:tippos",(tippos_side1[loadcnt],"m"))
-        closureprofile_side1.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
-        pass
-    closureprofile_side1_tree = xmltreev(closureprofile_side1)
-        
-    closureprofile_side2 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
-    for loadcnt in range(num_output_loads):
-        newel = closureprofile_side2.addsimpleelement(closureprofile_side2.getroot(),"dc:tippos",(tippos_side2[loadcnt],"m"))
-        closureprofile_side2.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
-        pass
-    closureprofile_side2_tree = xmltreev(closureprofile_side2)
-
+    
     fitplot_side1_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_tipfit_side1.png",contexthref=_dest_href)
     pl.figure(fitplot_side1.number)
     pl.savefig(fitplot_side1_href.getpath(),dpi=300)
@@ -175,8 +157,9 @@ def run(_xmldoc,_element,
                          
     pl.close('all')
     return [
-        (("dc:closureprofile",{"side": "1"}),closureprofile_side1_tree),
-        (("dc:closureprofile",{"side": "2"}),closureprofile_side2_tree),
+        #(("dc:closureprofile",{"side": "1"}),closureprofile_side1_tree),
+        #(("dc:closureprofile",{"side": "2"}),closureprofile_side2_tree),
+        ("dc:closureprofile",closureprofile_href),
         ("dc:closureprofileplot",closureprofile_plot_href),
         (("dc:dic_tip_fit",{"side": "1"}),fitplot_side1_href),
         (("dc:dic_tip_fit",{"side": "2"}),fitplot_side2_href),

@@ -1,6 +1,7 @@
 import sys
 import copy
 import numpy as np
+import csv
 
 #from matplotlib import pyplot as pl
 
@@ -614,3 +615,45 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
     
     return (full_model_params,full_model_result)
                      
+
+
+def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2):
+
+    minload=np.min(input_loads[~np.isnan(input_loads)].ravel())
+    maxload=np.max(input_loads[~np.isnan(input_loads)].ravel())
+
+    output_loads=np.linspace(minload,maxload,num_output_loads)
+    tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
+    tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
+
+    # Force tippos_side1 to decrease monotonically with increasing output_load
+    tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+    while np.count_nonzero(tippos_side1_increase):
+        toobig_indices=np.where(tippos_side1_increase)[0]+1
+        tippos_side1[toobig_indices]=tippos_side1[toobig_indices-1]
+        tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+        pass
+    
+
+    # Force tippos_side2 to increase monotonically with increasing output_load
+    tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+    while np.count_nonzero(tippos_side2_decrease):
+        toosmall_indices=np.where(tippos_side2_decrease)[0]+1
+        tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
+        tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+        pass
+
+    return (output_loads,tippos_side1,tippos_side2)
+
+def save_closureprofile(filepath,output_loads,tippos_side1,tippos_side2):
+    
+    with open(closureprofile_href.getpath(),"wb") as csvfile:
+        cpwriter = csv.writer(csvfile)
+        cpwriter.writerow(["Opening load (Pa)","xt (side 1, m)","xt (side 2, m)"])
+        for loadcnt in range(num_output_loads):
+            cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tipppos_side2[loadcnt]])
+            pass
+        pass
+    pass
+
+
