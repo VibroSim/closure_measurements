@@ -114,7 +114,7 @@ def run(_xmldoc,_element,
     LowerLeft_XCoordinates += shift_middleimg_lowerleft_corner_x[0]
     ybase += shift_middleimg_lowerleft_corner_y[0]  
 
-    dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs",contexthref=dc_scan_outdgd_href.leafless())
+    dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs.bz2",contexthref=dc_scan_outdgd_href.leafless())
 
     extra_wfmdict={}
 
