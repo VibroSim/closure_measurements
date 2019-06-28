@@ -12,6 +12,8 @@ from closure_measurements.process_dic import load_dgs
 from closure_measurements.process_dic import Calc_CTODs
 from closure_measurements.process_dic import CalcInitialModel
 from closure_measurements.process_dic import InitializeFullModel
+from closure_measurements.process_dic import TestRegistration
+
 
 # Probably want to run closure_measurement_coords on the same data file
 # prior to running this to set TipCoords1 and 2 and XRange.
