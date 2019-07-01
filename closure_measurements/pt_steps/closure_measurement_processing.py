@@ -130,20 +130,26 @@ def run(_xmldoc,_element,
     #    closureprofile_side2.setattr(newel,"load_pascals",str(output_loads[loadcnt]))
     #    pass
     #closureprofile_side2_tree = xmltreev(closureprofile_side2)
-    closureprofile_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_closureprofile.csv",contexthref=_dest_href)
+
+    outdic_basename = posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]
+    if posixpath.splitext(outdic_basename)[1]==".dgs":  # Would happen if what we just split off was a .bz2, .gz, etc.
+        outdic_basename = posixpath.splitext(outdic_basename)[0]
+        pass
+
+    closureprofile_href = hrefv(outdic_basename+"_closureprofile.csv",contexthref=_dest_href)
 
     process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads,tippos_side1,tippos_side2)
 
     
-    fitplot_side1_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_tipfit_side1.png",contexthref=_dest_href)
+    fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
     pl.figure(fitplot_side1.number)
     pl.savefig(fitplot_side1_href.getpath(),dpi=300)
 
-    fitplot_side2_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_tipfit_side2.png",contexthref=_dest_href)
+    fitplot_side2_href = hrefv(outdic_basename+"_tipfit_side2.png",contexthref=_dest_href)
     pl.figure(fitplot_side2.number)
     pl.savefig(fitplot_side2_href.getpath(),dpi=300)
 
-    closureprofile_plot_href = hrefv(posixpath.splitext(dc_scan_outdic_href.get_bare_quoted_filename())[0]+"_closureprofile.png",contexthref=_dest_href)
+    closureprofile_plot_href = hrefv(outdic_basename+"_closureprofile.png",contexthref=_dest_href)
     pl.figure()
     pl.plot(tippos_side1*1e3,output_loads/1e6,'-',
             tippos_side2*1e3,output_loads/1e6,'-')

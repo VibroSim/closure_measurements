@@ -1,5 +1,6 @@
 import sys
 import os
+import os.path
 import ast
 import tempfile
 
@@ -8,6 +9,7 @@ import numpy as np
 
 from matplotlib import pyplot as pl
 
+from closure_measurements import process_dic
 from closure_measurements.process_dic import load_dgs
 from closure_measurements.process_dic import Calc_CTODs
 from closure_measurements.process_dic import CalcInitialModel
@@ -41,6 +43,7 @@ def main(args=None):
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
     #nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
+    num_output_loads = 15
 
     if len(args) < 3:
         print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> <YoungsModulus> [DIC_span] [DIC_smoothing_window] [Tip tolerance] [min_dic_points_per_meter]")
@@ -175,7 +178,12 @@ def main(args=None):
 
     (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
 
-    outfilename = os.path.join(tempfile.gettempdir(),os.path.splitext(os.path.split(dgsfilename)[1])[0]+"_closureprofile.csv")
+    outdic_basename = os.path.splitext(os.path.split(dgsfilename)[1])[0]
+    if os.path.path.splitext(outdic_basename)[1]==".dgs":  # Would happen if what we just split off was a .bz2, .gz, etc.
+        outdic_basename = os.path.splitext(outdic_basename)[0]
+        pass
+
+    outfilename = os.path.join(tempfile.gettempdir(),outdic_basename+"_closureprofile.csv")
     
     process_dic.save_closureprofile(outfilename,output_loads,tippos_side1,tippos_side2)
 
