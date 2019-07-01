@@ -143,11 +143,11 @@ def run(_xmldoc,_element,
     
     fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
     pl.figure(fitplot_side1.number)
-    pl.savefig(fitplot_side1_href.getpath(),dpi=300)
+    pl.savefig(fitplot_side1_href.getpath(),dpi=300,transparent=True)
 
     fitplot_side2_href = hrefv(outdic_basename+"_tipfit_side2.png",contexthref=_dest_href)
     pl.figure(fitplot_side2.number)
-    pl.savefig(fitplot_side2_href.getpath(),dpi=300)
+    pl.savefig(fitplot_side2_href.getpath(),dpi=300,transparent=True)
 
     closureprofile_plot_href = hrefv(outdic_basename+"_closureprofile.png",contexthref=_dest_href)
     pl.figure()
@@ -158,7 +158,7 @@ def run(_xmldoc,_element,
     pl.ylabel('Applied load (MPa)')
     pl.legend(('Side 1','Side 2'),loc="best")
     pl.title(dc_specimen_str)
-    pl.savefig(closureprofile_plot_href.getpath(),dpi=300)
+    pl.savefig(closureprofile_plot_href.getpath(),dpi=300,transparent=True)
 
                          
     pl.close('all')
