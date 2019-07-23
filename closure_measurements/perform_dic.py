@@ -147,7 +147,7 @@ def execute_one_dic(params):
 
 
 def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
-                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,motioncontroller_tiptolerance=0.0,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
     """ Perform DIC on data already loaded into memory """
     
 
@@ -183,10 +183,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     # must be to the right of the left tip, and the left hand edge of
     # each image must be to the left of the right tip
     if len(LowerLeft_XCoordinates.shape) > 1:
-        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1) < TipCoords2[0])
+        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1)-motioncontroller_tiptolerance < TipCoords2[0])
         pass
     else:
-        XRange=(LowerLeft_XCoordinates+nx*dx > TipCoords1[0]) & (LowerLeft_XCoordinates < TipCoords2[0])
+        XRange=(LowerLeft_XCoordinates+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (LowerLeft_XCoordinates-motioncontroller_tiptolerance < TipCoords2[0])
         pass
     XRangeSize=np.count_nonzero(XRange)
 
