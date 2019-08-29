@@ -176,7 +176,7 @@ def main(args=None):
 
         pass
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2)
 
     outdic_basename = os.path.splitext(os.path.split(dgsfilename)[1])[0]
     if os.path.splitext(outdic_basename)[1]==".dgs":  # Would happen if what we just split off was a .bz2, .gz, etc.

@@ -617,7 +617,9 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
                      
 
 
-def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2):
+def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2):
+
+    assert(TipCoords1[0] < TipCoords2[0])
 
     minload=np.min(input_loads[~np.isnan(input_loads)].ravel())
     maxload=np.max(input_loads[~np.isnan(input_loads)].ravel())
@@ -634,6 +636,9 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
         tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
         pass
     
+    # Bound tippos_side1 to never be less than TipCoords1[0]
+    tippos_side1[tippos_side1 < TipCoords1[0]]=TipCoords1[0]
+
 
     # Force tippos_side2 to increase monotonically with increasing output_load
     tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
@@ -642,6 +647,9 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
         tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
         tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
         pass
+
+    # Bound tippos_side2 to never be greater than TipCoords2[0]
+    tippos_side2[tippos_side2 > TipCoords2[0]]=TipCoords2[0]
 
     return (output_loads,tippos_side1,tippos_side2)
 

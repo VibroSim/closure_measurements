@@ -115,7 +115,7 @@ def run(_xmldoc,_element,
     (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
 
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2)
     
     #closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     #for loadcnt in range(num_output_loads):
