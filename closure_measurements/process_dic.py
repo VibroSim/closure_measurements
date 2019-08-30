@@ -386,6 +386,8 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     avg_load_vals_sorted=avg_load_vals[avg_load_vals_sort]
     xt_vals_sorted = xt_vals[avg_load_vals_sort]
     
+    lowest_avg_load_used = np.min(avg_load_vals)
+
     minload=np.min(load1[~np.isnan(load1)].ravel())
     maxload=np.max(load1[~np.isnan(load1)].ravel())
     
@@ -469,7 +471,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pass
 
 
-    return (minload,maxload,seed_param,(fitplot,pickableplot,c5plot))
+    return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot))
     
 def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
