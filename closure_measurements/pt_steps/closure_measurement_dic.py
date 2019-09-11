@@ -61,7 +61,7 @@ def run(_xmldoc,_element,
     
     #dc_scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
 
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController,LowerLeft_YCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
 
     # LowerLeft_XCoordinates_MotionController are the
     # X coordinates of the lower left of each image, as
@@ -119,7 +119,7 @@ def run(_xmldoc,_element,
     LowerLeft_XCoordinates += shift_middleimg_lowerleft_corner_x[0]
     LowerLeft_YCoordinates += shift_middleimg_lowerleft_corner_y[0]
 
-
+    ybase += shift_middleimg_lowerleft_corner_y[0]
     dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs.bz2",contexthref=dc_scan_outdgd_href.leafless())
 
     extra_wfmdict={}

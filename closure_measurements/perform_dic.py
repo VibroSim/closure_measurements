@@ -106,8 +106,9 @@ def load_dgd(dgdfilename):
     ## *** NOTE: Y axis as defined by motion stages and Y axis from images
     ## are flipped in the recorded data. So here we flip the Y axis from the motion stages
     XPosn_relmiddle = -(YMotionPosns-YMotionPosns[nimages//2])*1e-3 # 1e-3 converts motion stage mm into meters
+
     LowerLeft_XCoordinates = use_x0 + XPosn_relmiddle
-    LowerLeft_YCoordinates = use_y0 + YPosn_relmiddle
+    LowerLeft_YCoordinates = use_y0 + np.zeros(nimages,dtype='d')
     
     return (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates)
 
@@ -147,7 +148,7 @@ def execute_one_dic(params):
     return (idx2,v_array,u_array,ROI_out_array)
 
 
-def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates
+def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
                             dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,motioncontroller_tiptolerance=0.0,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
     """ Perform DIC on data already loaded into memory """
     
@@ -281,9 +282,9 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
                 # Y coordinates are generally relative to the reference stress level picked 
                 # when identifying the crack tips
     
-                ROI_yminidx=np.where(ybase + (shift_middleimg_lowerleft_corner_y[idx1]+shift_middleimg_lowerleft_corner_y[idx2])/2.0 > YRange[0])[0][0]
+                ROI_yminidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 > YRange[0])[0][0]
                 
-                ROI_ymaxidx=np.where(ybase + (shift_middleimg_lowerleft_corner_y[idx1]+shift_middleimg_lowerleft_corner_y[idx2])/2.0 < YRange[1])[0][-1]
+                ROI_ymaxidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 < YRange[1])[0][-1]
                 
                 ROI[:,ROI_yminidx:ROI_ymaxidx]=1
                 
