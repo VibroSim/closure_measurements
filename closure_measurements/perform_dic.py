@@ -282,9 +282,9 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
                 # Y coordinates are generally relative to the reference stress level picked 
                 # when identifying the crack tips
     
-                ROI_yminidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 > YRange[0])[0][0]
+                ROI_yminidx=np.where(ybase - (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 > YRange[0])[0][0]
                 
-                ROI_ymaxidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 < YRange[1])[0][-1]
+                ROI_ymaxidx=np.where(ybase - (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 < YRange[1])[0][-1]
                 
                 ROI[:,ROI_yminidx:ROI_ymaxidx]=1
                 
