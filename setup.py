@@ -38,7 +38,7 @@ if os.path.exists(".git"):
 
     # See if we can get a more meaningful description from "git describe"
     try:
-        versionraw=subprocess.check_output(["git","describe","--tags","--match=v*"],stderr=subprocess.STDOUT).strip()
+        versionraw=subprocess.check_output(["git","describe","--tags","--match=v*"],stderr=subprocess.STDOUT).decode('utf-8').strip()
         # versionraw is like v0.1.0-50-g434343
         # for compatibility with PEP 440, change it to
         # something like 0.1.0+50.g434343
@@ -52,13 +52,18 @@ if os.path.exists(".git"):
         # Ignore error, falling back to above version string
         pass
 
-    if modified:
-        version += "-MODIFIED"
+    if modified and version.find('+') >= 0:
+        version += ".modified"
+        pass
+    elif modified:
+        version += "+modified"
         pass
     pass
 else:
     version = "UNKNOWN"
     pass
+
+print("version = %s" % (version))
 
 closure_measurements_package_files=[ "qagse_fparams.c","pt_steps/*"]
 
