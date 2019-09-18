@@ -21,12 +21,15 @@ def run(_xmldoc,_element,
         dc_scan_outdgd_href,
         dc_crackpath,
         dc_coordinatetransform,
+        dc_motioncontroller_tiptolerance_numericunits=numericunitsv(0.6e-3,'m'),
         dic_scalefactor_int=5,
         dic_radius_int=20,
         dic_span_int=20,
         n_threads=multiprocessing.cpu_count(),
         debug_bool=False):
 
+    motioncontroller_tiptolerance = dc_motioncontroller_tiptolerance_numericunits.value('m')
+    
     # Coordinates in _dic.dgs files genereted by
     # this processtrak step shall be in stitched optical image
     # coordinates (see ExtractAndSitchOpticalImageJ.py _aligned_measnum.dgs and RegisterOpticalData.py)
@@ -58,7 +61,7 @@ def run(_xmldoc,_element,
     
     #dc_scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
 
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController,LowerLeft_YCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
 
     # LowerLeft_XCoordinates_MotionController are the
     # X coordinates of the lower left of each image, as
@@ -102,6 +105,8 @@ def run(_xmldoc,_element,
     # build LowerLeft_XCoordinates from alignment data
     # indexed by (posncnt,stresscnt)... positions relative to  image @ middle position, first stress. 
     LowerLeft_XCoordinates = (registrationshift_x-registrationshift_x[numposns//2,:])*dx  # subtract out shift from middle image at this stress level
+
+    LowerLeft_YCoordinates = (registrationshift_y-registrationshift_y[numposns//2,:])*dy  # subtract out shift from middle image at this stress level
     
     relshift_middleimg_lowerleft_corner_x = np.array(shift_middleimg_lowerleft_corner_x,dtype='d')-shift_middleimg_lowerleft_corner_x[0]
     relshift_middleimg_lowerleft_corner_y = np.array(shift_middleimg_lowerleft_corner_y,dtype='d')-shift_middleimg_lowerleft_corner_y[0]
@@ -112,8 +117,9 @@ def run(_xmldoc,_element,
     
     # Add the shifts into LowerLeft_XCoordinates and ybase
     LowerLeft_XCoordinates += shift_middleimg_lowerleft_corner_x[0]
-    ybase += shift_middleimg_lowerleft_corner_y[0]  
+    LowerLeft_YCoordinates += shift_middleimg_lowerleft_corner_y[0]
 
+    ybase += shift_middleimg_lowerleft_corner_y[0]
     dgs_outfilehref = hrefv(posixpath.splitext(dc_scan_outdgd_href.get_bare_quoted_filename())[0]+"_dic.dgs.bz2",contexthref=dc_scan_outdgd_href.leafless())
 
     extra_wfmdict={}
@@ -133,11 +139,12 @@ def run(_xmldoc,_element,
      Xposvecs,
      Xinivec,
      CrackCenterX,
-     dic_dx,dic_dy)=execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
+     dic_dx,dic_dy)=execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
                                             dgs_outfilehref.getpath(),dic_scalefactor_int,dic_radius_int,TipCoords1,TipCoords2,YRange,
                                             extra_wfmdict=extra_wfmdict,
                                             relshift_middleimg_lowerleft_corner_x=relshift_middleimg_lowerleft_corner_x,
                                             relshift_middleimg_lowerleft_corner_y=relshift_middleimg_lowerleft_corner_y,
+                                            motioncontroller_tiptolerance=motioncontroller_tiptolerance,
                                             n_threads=n_threads,processpool=processpool,debug=debug_bool)
     
     

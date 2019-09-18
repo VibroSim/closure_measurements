@@ -106,9 +106,11 @@ def load_dgd(dgdfilename):
     ## *** NOTE: Y axis as defined by motion stages and Y axis from images
     ## are flipped in the recorded data. So here we flip the Y axis from the motion stages
     XPosn_relmiddle = -(YMotionPosns-YMotionPosns[nimages//2])*1e-3 # 1e-3 converts motion stage mm into meters
+
     LowerLeft_XCoordinates = use_x0 + XPosn_relmiddle
+    LowerLeft_YCoordinates = use_y0 + np.zeros(nimages,dtype='d')
     
-    return (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)
+    return (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates)
 
 
 def dic_plot_click_handler(event):
@@ -117,7 +119,7 @@ def dic_plot_click_handler(event):
 
 def dic_raw_plots(dgdfilename):
     from matplotlib import pyplot as pl
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)=load_dgd(dgdfilename)
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates)=load_dgd(dgdfilename)
     
     maxstress_idx=np.argmax(np.abs(StressPosns))
     for XMotionidx in range(LowerLeft_XCoordinates.shape[0]):
@@ -146,8 +148,8 @@ def execute_one_dic(params):
     return (idx2,v_array,u_array,ROI_out_array)
 
 
-def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
-                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
+                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,motioncontroller_tiptolerance=0.0,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
     """ Perform DIC on data already loaded into memory """
     
 
@@ -165,15 +167,6 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     CrackCenterX=(TipCoords1[0]+TipCoords2[0])/2.0
 
     
-    ROI=np.zeros((nx,ny),dtype=np.uint8,order='F')
-    # Should use better process to locate crack and identify ROI
-    #ROI[450:840,:]=1
-    
-    ROI_yminidx=np.where(ybase > YRange[0])[0][0]
-    
-    ROI_ymaxidx=np.where(ybase < YRange[1])[0][-1]
-
-    ROI[:,ROI_yminidx:ROI_ymaxidx]=1
 
     #sys.modules["__main__"].__dict__.update(globals())
     #sys.modules["__main__"].__dict__.update(locals())
@@ -183,10 +176,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     # must be to the right of the left tip, and the left hand edge of
     # each image must be to the left of the right tip
     if len(LowerLeft_XCoordinates.shape) > 1:
-        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1) < TipCoords2[0])
+        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1)-motioncontroller_tiptolerance < TipCoords2[0])
         pass
     else:
-        XRange=(LowerLeft_XCoordinates+nx*dx > TipCoords1[0]) & (LowerLeft_XCoordinates < TipCoords2[0])
+        XRange=(LowerLeft_XCoordinates+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (LowerLeft_XCoordinates-motioncontroller_tiptolerance < TipCoords2[0])
         pass
     XRangeSize=np.count_nonzero(XRange)
 
@@ -241,6 +234,14 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
             else:
                 LowerLeft_XCoordinate = LowerLeft_XCoordinates[Xidx,idx1]
                 pass
+
+            if len(LowerLeft_YCoordinates.shape)==1:  # just single dimension -- no load dependence
+                LowerLeft_YCoordinate = LowerLeft_YCoordinates[Xidx]
+                pass
+            else:
+                LowerLeft_YCoordinate = LowerLeft_YCoordinates[Xidx,idx1]
+                pass
+
             Xinivec[XCnt,idx1]=LowerLeft_XCoordinate
             Xposvec=Xinivec[XCnt,idx1] + np.arange(nx//dic_scalefactor,dtype='d')*dx*dic_scalefactor
             Xposvecs[:,XCnt,idx1]=Xposvec
@@ -272,6 +273,21 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
                     relymtx_diff[idx1,idx2]=relshift_middleimg_lowerleft_corner_y[idx2]
                     #relymtx_ref[idx2,idx1]=relshift_middleimg_lowerleft_corner_y[idx1]
                     pass
+
+
+                ROI=np.zeros((nx,ny),dtype=np.uint8,order='F')
+                # Should use better process to locate crack and identify ROI
+                #ROI[450:840,:]=1
+
+                # Y coordinates are generally relative to the reference stress level picked 
+                # when identifying the crack tips
+    
+                ROI_yminidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 > YRange[0])[0][0]
+                
+                ROI_ymaxidx=np.where(ybase + (relshift_middleimg_lowerleft_corner_y[idx1]+relshift_middleimg_lowerleft_corner_y[idx2])/2.0 < YRange[1])[0][-1]
+                
+                ROI[:,ROI_yminidx:ROI_ymaxidx]=1
+                
 
                 # DIC represents idx2 state minus idx1 state
                 #
@@ -545,7 +561,7 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
 
 """
     
-    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates)=load_dgd(dgdfilename)
+    (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates)=load_dgd(dgdfilename)
 
-    return execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,
+    return execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
                                    dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict=extra_wfmdict,n_threads=n_threads,processpool=processpool,debug=debug)

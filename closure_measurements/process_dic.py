@@ -386,6 +386,8 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     avg_load_vals_sorted=avg_load_vals[avg_load_vals_sort]
     xt_vals_sorted = xt_vals[avg_load_vals_sort]
     
+    lowest_avg_load_used = np.min(avg_load_vals)
+
     minload=np.min(load1[~np.isnan(load1)].ravel())
     maxload=np.max(load1[~np.isnan(load1)].ravel())
     
@@ -469,7 +471,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pass
 
 
-    return (minload,maxload,seed_param,(fitplot,pickableplot,c5plot))
+    return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot))
     
 def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
@@ -617,7 +619,9 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
                      
 
 
-def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2):
+def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2):
+
+    assert(TipCoords1[0] < TipCoords2[0])
 
     minload=np.min(input_loads[~np.isnan(input_loads)].ravel())
     maxload=np.max(input_loads[~np.isnan(input_loads)].ravel())
@@ -634,6 +638,9 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
         tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
         pass
     
+    # Bound tippos_side1 to never be less than TipCoords1[0]
+    tippos_side1[tippos_side1 < TipCoords1[0]]=TipCoords1[0]
+
 
     # Force tippos_side2 to increase monotonically with increasing output_load
     tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
@@ -642,6 +649,9 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
         tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
         tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
         pass
+
+    # Bound tippos_side2 to never be greater than TipCoords2[0]
+    tippos_side2[tippos_side2 > TipCoords2[0]]=TipCoords2[0]
 
     return (output_loads,tippos_side1,tippos_side2)
 

@@ -1,5 +1,6 @@
 import sys
 import os
+import os.path
 import ast
 import tempfile
 
@@ -8,10 +9,13 @@ import numpy as np
 
 from matplotlib import pyplot as pl
 
+from closure_measurements import process_dic
 from closure_measurements.process_dic import load_dgs
 from closure_measurements.process_dic import Calc_CTODs
 from closure_measurements.process_dic import CalcInitialModel
 from closure_measurements.process_dic import InitializeFullModel
+from closure_measurements.process_dic import TestRegistration
+
 
 # Probably want to run closure_measurement_coords on the same data file
 # prior to running this to set TipCoords1 and 2 and XRange.
@@ -39,6 +43,7 @@ def main(args=None):
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
     #nominal_modulus=100.0e9 # nominal modulus
     nominal_stress=50e6 # nominal stress
+    num_output_loads = 15
 
     if len(args) < 3:
         print("Usage: closure_measurement_processing <dgs_file> <Symmetric_COD> <YoungsModulus> [DIC_span] [DIC_smoothing_window] [Tip tolerance] [min_dic_points_per_meter]")
@@ -150,10 +155,10 @@ def main(args=None):
                                           doplots=True)
 
     
-    (minload_side1,maxload_side1,seed_param_side1,fm_plots_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
     (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
 
-    (minload_side2,maxload_side2,seed_param_side2,fm_plots_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
 
     
     print("seed_param_side1=%s" % (str(seed_param_side1)))
@@ -171,9 +176,14 @@ def main(args=None):
 
         pass
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2)
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2)
 
-    outfilename = os.path.join(tempfile.gettempdir(),os.path.splitext(os.path.split(dgsfilename)[1])[0]+"_closureprofile.csv")
+    outdic_basename = os.path.splitext(os.path.split(dgsfilename)[1])[0]
+    if os.path.splitext(outdic_basename)[1]==".dgs":  # Would happen if what we just split off was a .bz2, .gz, etc.
+        outdic_basename = os.path.splitext(outdic_basename)[0]
+        pass
+
+    outfilename = os.path.join(tempfile.gettempdir(),outdic_basename+"_closureprofile.csv")
     
     process_dic.save_closureprofile(outfilename,output_loads,tippos_side1,tippos_side2)
 
