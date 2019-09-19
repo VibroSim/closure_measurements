@@ -66,7 +66,7 @@ def run(_xmldoc,_element,
         # and fork() we should probably have processtrak
         # call multiprocessing.set_start_method("spawn") under python
         # versions that support it. 
-        import pyopencl 
+        import pyopencl as cl 
         ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
         dev = ctx.devices[0]
         print("Using accelerator \"%s\" for fullmodel optimization" % (dev.name))
@@ -140,12 +140,12 @@ def run(_xmldoc,_element,
         nominal_modulus = YoungsModulus  # Actually just used for normalization...
 
         
-        (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
+        (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,dc_symmetric_cod_bool,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
         (full_model_residual_plot_side1,full_model_optim_fitplot_side1) = full_model_optim_plots_side1
         
         model_params_side1 = full_model_params_side1
 
-        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
+        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,dc_symmetric_cod_bool,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
         (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
 
         model_params_side2 = full_model_params_side2
