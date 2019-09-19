@@ -125,7 +125,7 @@ def full_model_residual(params,InitialCoeffs,XPositions,CTODValues,load1,load2,m
                 pass
 
             
-            if np.isnan(InitialCoeffs[1,idx1,idx2]) or YPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
+            if np.isnan(InitialCoeffs[1,idx1,idx2]) or XPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
                 # Consider these data not valid. Discard
                 continue
             

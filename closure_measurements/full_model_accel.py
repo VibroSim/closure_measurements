@@ -319,7 +319,7 @@ __kernel void integrate_full_model_kernel(float load1,
   size_t X_idx;
 
   X_idx = get_global_id(0);
-  XPosition=YPositions[X_idx];
+  XPosition=XPositions[X_idx];
 
   alist = flists + X_idx*4*limit;
   blist = flists + X_idx*4*limit + limit;
@@ -458,7 +458,7 @@ def plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,ma
             idx1=index // avg_load.shape[1]
             idx2=index % avg_load.shape[1]
 
-            if YPositions[idx1,idx2] is None:
+            if XPositions[idx1,idx2] is None:
                 # No data here
                 continue
 
@@ -470,8 +470,8 @@ def plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,ma
             #sys.modules["__main__"].__dict__.update(locals())
             XPositionsSort=np.argsort(XPositions[idx1,idx2])
             XPositionsSorted=XPositions[idx1,idx2][XPositionsSort]
-            #CTODValuesSorted=CTODValues[idx1,idx2][YPositionsSort]
-            #InitialModelValuesSorted=InitialModels[idx1,idx2][YPositionsSort]
+            #CTODValuesSorted=CTODValues[idx1,idx2][XPositionsSort]
+            #InitialModelValuesSorted=InitialModels[idx1,idx2][XPositionsSort]
 
             integralvals = np.array([ scipy.integrate.quad(full_model_kernel,load1[idx1,idx2],load2[idx1,idx2],(XPosition,c5,tck,CrackCenterX,Symmetric_COD,side))[0]  for XPosition in XPositionsSorted ],dtype='d')
 
@@ -488,7 +488,7 @@ def plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,ma
 
     # disconnect prior callback handlers
     if "pick_event" in fig.canvas.callbacks.callbacks:
-        for cid in fig.canvas.callbacks.callbacks["pick_event"].keys():
+        for cid in list(fig.canvas.callbacks.callbacks["pick_event"].keys()):
             fig.canvas.mpl_disconnect(cid)
             pass
         pass
@@ -585,7 +585,7 @@ def full_model_residual_accel(params,InitialCoeffs,XPositions,CTODValues,load1,l
                 pass
 
             
-            if np.isnan(InitialCoeffs[1,idx1,idx2]) or YPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
+            if np.isnan(InitialCoeffs[1,idx1,idx2]) or XPositions[idx1,idx2].shape[0] <= 20 or InitialCoeffs[0,idx1,idx2] <  min_c5:
                 # Consider these data not valid. Discard
                 continue
 
@@ -613,8 +613,8 @@ def full_model_residual_accel(params,InitialCoeffs,XPositions,CTODValues,load1,l
                                         None,
                                     None])
         
-            assert(YPositions[idx1,idx2].flags.contiguous)
-            assert(YPositions[idx1,idx2].dtype==np.float32)
+            assert(XPositions[idx1,idx2].flags.contiguous)
+            assert(XPositions[idx1,idx2].dtype==np.float32)
             
             XPositions_buf = cl.Buffer(opencl_ctx,mf.READ_ONLY,size=XPositions[idx1,idx2].nbytes)
             XCopyEv=cl.enqueue_copy(queue,XPositions_buf,XPositions[idx1,idx2],is_blocking=False);

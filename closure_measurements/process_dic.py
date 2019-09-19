@@ -420,7 +420,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
                 fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','yt within data range and good SNR','fit to yt within data range and good SNR'),loc="best")
+        pl.legend(('All DIC fit data','xt within data range and good SNR','fit to xt within data range and good SNR'),loc="best")
         pl.title('xt')
         pl.grid()
 
@@ -471,9 +471,9 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pass
 
 
-    return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot))
+    return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot),(xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals))
     
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,doplots=True,opencl_ctx=None,opencl_dev=None):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,fm_plotdata=None,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(x-xt)*u(x-xt) dsigma
@@ -601,6 +601,8 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
 
         from matplotlib import pyplot as pl
 
+        (xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals)=fm_plotdata
+        
         pl.figure()
         pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
                 xt_vals*1e3,avg_load_vals/1e6,'o',

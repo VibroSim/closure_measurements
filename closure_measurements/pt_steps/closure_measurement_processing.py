@@ -108,10 +108,10 @@ def run(_xmldoc,_element,
                                           doplots=False)
 
 
-    (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=1,doplots=True)
+    (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=1,doplots=True)
     (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
 
-    (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=2,doplots=True)
+    (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=2,doplots=True)
     (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
 
 
