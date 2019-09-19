@@ -593,7 +593,8 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
     #raise ValueError("Break!")
 
 
-        # Plot diagnostics
+    # Plot diagnostics
+    full_model_optim_fitplot = None
     if doplots:
         
         sigmarange=np.linspace(minload,maxload,150)
@@ -603,7 +604,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
 
         (xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals)=fm_plotdata
         
-        pl.figure()
+        full_model_optim_fitplot=pl.figure()
         pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
                 xt_vals*1e3,avg_load_vals/1e6,'o',
                 fittedvals*1e3,sigmarange/1e6,'-',
@@ -617,7 +618,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
 
     
     
-    return (full_model_params,full_model_result)
+    return (full_model_params,full_model_result,(full_model_residual_plot,full_model_optim_fitplot))
                      
 
 

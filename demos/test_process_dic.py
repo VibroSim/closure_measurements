@@ -38,8 +38,11 @@ if __name__=="__main__":
 
     #dgsfilename = "/tmp/C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
     #dgsfilename = "/tmp/C18-AFVT-011X_optical_collect_optical_data_dic.dgs"
-    dgsfilename = "/tmp/0000-C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
+    #dgsfilename = "/tmp/0000-C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
+    dgsfilename = "/tmp/0001-C14-UTCA-013E_optical_collect_optical_data_dic.dgs.bz2"
 
+    dic_fullmodel_optimization=True
+    
     YoungsModulus=113.8e9  # 113.8 GPa for Ti-6-4
     # YoungsModulus=200.0e9 # 200 GPa for In718
     
@@ -50,19 +53,28 @@ if __name__=="__main__":
     min_dic_points_per_meter=40000
 
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
-    #nominal_modulus=100.0e9 # nominal modulus
+    if dic_fullmodel_optimization:
+        nominal_modulus=100.0e9 # nominal modulus
+        pass
+    
     nominal_stress=50e6 # nominal stress
 
     tip_tolerance = 100e-6 # 100 microns
 
     Symmetric_COD=True # assume a symmetric form for the COD -- appropriate when the data is from surface cracks of length 2a where the center is (roughly) a symmetry point
     
-    
-    #ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
-    #dev = ctx.devices[0]
-    ctx = None
-    dev = None
+    if dic_fullmodel_optimization:
+        ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
+        dev = ctx.devices[0]
+        print("Using accelerator \"%s\" for fullmodel optimization" % (dev.name))
+        pass
+    else:
+        
+        ctx = None
+        dev = None
+        pass
 
+    
     (dic_dx,dic_dy,
      dic_nx,dic_ny,
      XRangeSize,
@@ -109,12 +121,15 @@ if __name__=="__main__":
 
     (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
 
+
+    if dic_fullmodel_optimization:
+        (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
+
+        
+        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
+        pass
+
     
-    #(full_model_params_side1,full_model_result_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
-
-
-    #(full_model_params_side2,full_model_result_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
-
     if relshift_middleimg_lowerleft_corner_x_ref is not None:
         # Only applies to DIC dgs files generated through dc_process that have additional registration info added!
         TestRegistration(nloads,Xposvecs,u_disps,v_disps,

@@ -197,7 +197,7 @@ def main(args=None):
     #pl.title(dc_specimen_str)
     #pl.savefig(closureprofile_plot_href.getpath(),dpi=300)
 
-        
+    # !!!*** Should add ability to run full model optimization
     
     pl.show()
     pass

@@ -10,7 +10,7 @@ from matplotlib import pyplot as pl
 import limatix.timestamp
 from closure_measurements import process_dic
 
-from closure_measurements.process_dic import load_dgs,Calc_CTODs,CalcInitialModel,EvalEffectiveTip,InitializeFullModel
+from closure_measurements.process_dic import load_dgs,Calc_CTODs,CalcInitialModel,EvalEffectiveTip,InitializeFullModel,CalcFullModel
 
 from limatix import dc_value
 from limatix import xmldoc
@@ -34,6 +34,7 @@ def run(_xmldoc,_element,
         dc_dic_tip_tolerance_numericunits=numericunitsv(50e-6,"m"),
         dc_min_dic_points_per_meter_numericunits=numericunitsv(40000,"1/m"),
         dc_symmetric_cod_bool=True,
+        dc_dic_fullmodel_optimization_bool=False, # Enable fullmodel optimization by adding a <dc:dic_fullmodel_optimization>True</dc:dic_fullmodel_optimization> tag to the experiment log entry (and xlp file)
         debug_bool=False):
     
     # Non-adjustable parameters
@@ -59,6 +60,25 @@ def run(_xmldoc,_element,
     #keypoints = _opxmldoc.xpathcontext(dc_crackpath, 'dc:segment/dc:keypoint')
 
     tip_tolerance = dc_dic_tip_tolerance_numericunits.value("m")
+
+    if dc_dic_fullmodel_optimization_bool:
+        # NOTE: to avoid problems with steps that use multprocessing
+        # and fork() we should probably have processtrak
+        # call multiprocessing.set_start_method("spawn") under python
+        # versions that support it. 
+        import pyopencl 
+        ctx = cl.create_some_context()  # set ctx and dev equal to None in order to disable OpenCL acceleration
+        dev = ctx.devices[0]
+        print("Using accelerator \"%s\" for fullmodel optimization" % (dev.name))
+        pass
+    else:
+        
+        ctx = None
+        dev = None
+        pass
+
+
+
     
     (dic_dx,dic_dy,
      dic_nx,dic_ny,
@@ -115,7 +135,27 @@ def run(_xmldoc,_element,
     (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
 
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2)
+    if dc_dic_fullmodel_optimization_bool:
+
+        nominal_modulus = YoungsModulus  # Actually just used for normalization...
+
+        
+        (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,Symmetric_COD,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
+        (full_model_residual_plot_side1,full_model_optim_fitplot_side1) = full_model_optim_plots_side1
+        
+        model_params_side1 = full_model_params_side1
+
+        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
+        (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
+
+        model_params_side2 = full_model_params_side2
+        pass
+    else:
+        model_params_side1 = seed_param_side1
+        model_params_side2 = seed_param_side2
+        pass
+    
+    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,model_params_side1,model_params_side2,TipCoords1,TipCoords2)
     
     #closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     #for loadcnt in range(num_output_loads):
@@ -140,13 +180,22 @@ def run(_xmldoc,_element,
 
     process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads,tippos_side1,tippos_side2)
 
-    
     fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
-    pl.figure(fitplot_side1.number)
+    if dc_dic_fullmodel_optimization_bool:
+        pl.figure(full_model_optim_fitplot_side1.number)
+        pass
+    else:
+        pl.figure(fitplot_side1.number)
+        pass
     pl.savefig(fitplot_side1_href.getpath(),dpi=300,transparent=True)
 
     fitplot_side2_href = hrefv(outdic_basename+"_tipfit_side2.png",contexthref=_dest_href)
-    pl.figure(fitplot_side2.number)
+    if dc_dic_fullmodel_optimization_bool:
+        pl.figure(full_model_optim_fitplot_side2.number)
+        pass
+    else:
+        pl.figure(fitplot_side2.number)
+        pass
     pl.savefig(fitplot_side2_href.getpath(),dpi=300,transparent=True)
 
     closureprofile_plot_href = hrefv(outdic_basename+"_closureprofile.png",contexthref=_dest_href)
