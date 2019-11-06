@@ -24,7 +24,7 @@ from closure_measurements.process_dic import TestRegistration
 # and it will print out the coordinates in meters,
 # suitable for use in these parameters
 
-processpool = multiprocessing.Pool(multiprocessing.cpu_count()/2+1)
+processpool = multiprocessing.Pool(multiprocessing.cpu_count()//2+1)
 #processpool=None
 
 def main(args=None):

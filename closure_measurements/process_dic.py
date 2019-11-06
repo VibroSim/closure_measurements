@@ -7,6 +7,7 @@ import csv
 
 import scipy
 import scipy.integrate
+import scipy.interpolate
 
 import dg_file as dgf
 import dg_metadata as dgm
@@ -659,9 +660,11 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
     return (output_loads,tippos_side1,tippos_side2)
 
 def save_closureprofile(filepath,output_loads,tippos_side1,tippos_side2):
-    
-    with open(filepath,"wb") as csvfile:
-        cpwriter = csv.writer(csvfile)
+ 
+    open
+   
+    with open(filepath,"w") as csvfile:
+        cpwriter = csv.writer(csvfile,lineterminator="\n")
         cpwriter.writerow(["Opening load (Pa)","xt (side 1, m)","xt (side 2, m)"])
         for loadcnt in range(output_loads.shape[0]):
             cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tippos_side2[loadcnt]])

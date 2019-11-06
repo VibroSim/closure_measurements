@@ -105,7 +105,7 @@ if __name__=="__main__":
      Error_side1,
      npoints_side1,
      XPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,1,YoungsModulus,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side1) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,1,YoungsModulus,relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
 
     
 
@@ -114,7 +114,7 @@ if __name__=="__main__":
      Error_side2,
      npoints_side2,
      XPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
+     CTODValues_side2) = CalcInitialModel(nloads,CTODs,load1,load2,Xposvecs,CrackCenterX,dic_dy,dic_span,Symmetric_COD,2,YoungsModulus,relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,nominal_length=nominal_length,nominal_stress=nominal_stress,doplots=True)
 
     
     (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
