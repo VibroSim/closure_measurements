@@ -499,7 +499,7 @@ def plot_full_model_residual(params,XPositions,CTODValues,load1,load2,minload,ma
     
     #full_model_residual_plot.canvas.draw()
     #full_model_residual_plot.canvas.flush_events()
-    pl.savefig('/tmp/loadplot.png',dpi=300)
+    #pl.savefig('/tmp/loadplot.png',dpi=300)
     pass
 
 
