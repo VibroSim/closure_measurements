@@ -28,9 +28,12 @@ def main(args=None):
     debug = False
 
     if len(args) < 5:
-        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <tipcoords2> <yrange> [ debug ] [ dic_scalefactor ] [ dic_radius ]")
+        print("Usage: closure_measurement_dic <dgd_file> <tipcoords1> <centercoords> <tipcoords2> <yrange> [ debug ] [ dic_scalefactor ] [ dic_radius ]")
         print("Perform closure measurement on given .dgd optical microscopy file")
-        print("Must specify crack tip locations and yrange as tuples")
+        print("Must specify crack tip locations, center, and yrange as tuples. ")
+        print("A non-present tip can be specified as \"None\". ")
+        print("If centercoords is specified as \"None\" it will be estimated from")
+        print("the average of the two tip positions. ")
         print("debug, dic_scalefactor and dic_radius are optional parameters")
         print("defaulting to %s, %d and %d respectively" % (str(debug),dic_scalefactor, dic_radius))
         print(" ")
@@ -47,25 +50,39 @@ def main(args=None):
     
     #TipCoords1=(0.000339087,0.00317911) # should have smaller value of x
     TipCoords1 = ast.literal_eval(args[2])
+    CrackCenterCoords = = ast.literal_eval(args[3])
     #TipCoords2=(0.000375043,0.00690454) # Should have larger value of x
-    TipCoords2 = ast.literal_eval(args[3])
+    TipCoords2 = ast.literal_eval(args[4])
 
-    if TipCoords1[0] > TipCoords2[0]:
-        raise ValueError("Second tip coordinate should have larger value of x")
-    
-    #YRange=(.15e-3,.8e-3)
-    YRange = ast.literal_eval(args[4])
-
-    if len(args) > 5:
-        debug = bool(ast.literal_eval(args[5]))
+    if CrackCenterCoords is None:
+        CrackCenterCoords=((TipCoords1[0]+TipCoords2[0])/2.0,(TipCoords1[1]+TipCoords2[1])/2.0)
         pass
+    if TipCoords1 is not None:
+
+        if TipCoords1[0] > CrackCenterCoords[0]:
+            raise ValueError("First tip coordinate should have lower value of x than crack center")
+        pass
+
+
+    if TipCoords2 is not None:
+
+        if TipCoords2[0] < CrackCenterCoords[0]:
+            raise ValueError("Second tip coordinate should have larger value of x than crack center")
+        pass
+        
+    #YRange=(.15e-3,.8e-3)
+    YRange = ast.literal_eval(args[5])
 
     if len(args) > 6:
-        dic_scalefactor = int(args[6])
+        debug = bool(ast.literal_eval(args[6]))
+        pass
+
+    if len(args) > 7:
+        dic_scalefactor = int(args[7])
         pass
     
-    if len(args) > 7:
-        dic_radius = int(args[7])
+    if len(args) > 8:
+        dic_radius = int(args[8])
         pass
     
     #tmpdir='/tmp'
@@ -78,6 +95,6 @@ def main(args=None):
     if os.path.exists(dgs_outfilename):
         raise ValueError("Output file \"%s\" exists; will not overwrite" % (dgs_outfilename))
     
-    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,n_threads=4,processpool=processpool,debug=debug)
+    execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,CrackCenterCoords,TipCoords2,YRange,n_threads=4,processpool=processpool,debug=debug)
 
     pass

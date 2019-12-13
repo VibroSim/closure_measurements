@@ -51,6 +51,8 @@ def main(args=None):
         print("Process DIC closure measurement on given .dgs DIC output file")
         print("Resulting closure state will be written into %s" % (tempfile.gettempdir()))
         print(" ")
+        print("NOTE: Does not currently support running the full model, just the initial model.")
+        print(" ")
         print("TIP: To use the clickable plots, run through ipython, e.g.:")
         print("      ipython qtconsole &")
         print(" (then within the new qtconsole:)")
@@ -113,7 +115,7 @@ def main(args=None):
      Xinivec,Xposvecs,
      load1,load2,u_disps,v_disps,
      ROI_out_arrays,
-     CrackCenterX,TipCoords1,TipCoords2,
+     CrackCenterCoords,TipCoords1,TipCoords2,
      ROI_dic_yminidx,ROI_dic_ymaxidx,
      relshift_middleimg_lowerleft_corner_x_ref,
      relshift_middleimg_lowerleft_corner_x_diff,
@@ -124,46 +126,58 @@ def main(args=None):
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_smoothing_window)
 
 
-    
-    (InitialModels_side1,
-     InitialCoeffs_side1,
-     Error_side1,
-     npoints_side1,
-     XPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,
-                                          load1,load2,
-                                          Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span,
-                                          Symmetric_COD,1,YoungsModulus,
-                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
-                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
-                                          doplots=True)
+    if TipCoords1 is not None:
+        (InitialModels_side1,
+         InitialCoeffs_side1,
+         Error_side1,
+         npoints_side1,
+         XPositions_side1,
+         CTODValues_side1) = CalcInitialModel(nloads,CTODs,
+                                              load1,load2,
+                                              Xposvecs,CrackCenterCoords,
+                                              dic_dy,dic_span,
+                                              Symmetric_COD,1,YoungsModulus,
+                                              relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
+                                              nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                              doplots=True)
+        pass
+        
+    if TipCoords2 is not None:
+        
+        (InitialModels_side2,
+         InitialCoeffs_side2,
+         Error_side2,
+         npoints_side2,
+         XPositions_side2,
+         CTODValues_side2) = CalcInitialModel(nloads,CTODs,
+                                              load1,load2,
+                                              Xposvecs,CrackCenterCoords,
+                                              dic_dy,dic_span,
+                                              Symmetric_COD,2,YoungsModulus,
+                                              relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
+                                              nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                              doplots=True)
+        pass
+        
 
+    seed_param_side1=None
+    seed_param_side2=None
 
-    (InitialModels_side2,
-     InitialCoeffs_side2,
-     Error_side2,
-     npoints_side2,
-     XPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,
-                                          load1,load2,
-                                          Xposvecs,CrackCenterX,
-                                          dic_dy,dic_span,
-                                          Symmetric_COD,2,YoungsModulus,
-                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
-                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
-                                          doplots=True)
+    if TipCoords1 is not None:
+        (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
+        (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
+        print("seed_param_side1=%s" % (str(seed_param_side1)))
+        pass
 
-    
-    (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
-    (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
-
-    (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
-
-    
-    print("seed_param_side1=%s" % (str(seed_param_side1)))
     print(" ")
-    print("seed_param_side2=%s" % (str(seed_param_side2)))
+
+    if TipCoords2 is not None:
+        (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=2,doplots=True)
+        (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
+        print("seed_param_side2=%s" % (str(seed_param_side2)))
+        pass
+
+        
 
     if relshift_middleimg_lowerleft_corner_x_ref is not None:
         # Only applies to DIC dgs files generated through dc_process that have additional registration info added!
@@ -188,8 +202,12 @@ def main(args=None):
     process_dic.save_closureprofile(outfilename,output_loads,tippos_side1,tippos_side2)
 
     pl.figure()
-    pl.plot(tippos_side1*1e3,output_loads/1e6,'-',
-            tippos_side2*1e3,output_loads/1e6,'-')
+    if tippos_side1 is not None:
+        pl.plot(tippos_side1*1e3,output_loads/1e6,'-')
+        pass
+    if tippos_side2 is not None:
+        pl.plot(tippos_side2*1e3,output_loads/1e6,'-')
+        pass
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
     pl.ylabel('Applied load (MPa)')

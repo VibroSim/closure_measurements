@@ -1,6 +1,7 @@
 import sys
 import copy
 import numpy as np
+import pandas as pd
 import csv
 
 #from matplotlib import pyplot as pl
@@ -56,10 +57,30 @@ def load_dgs(dgsfilename):
     Xinivec=wfmdict["Xinivec"].data
 
     CrackCenterX=dgm.GetMetaDatumLDbl(metadatadict,"CrackCenterX",np.nan)
+    CrackCenterY=dgm.GetMetaDatumLDbl(metadatadict,"CrackCenterY",np.nan)
     TipCoords1=(dgm.GetMetaDatumLDbl(metadatadict,"TipCoords1X",np.nan),
                 dgm.GetMetaDatumLDbl(metadatadict,"TipCoords1Y",np.nan))
+
+    if np.isnan(TipCoords1[0]) and np.isnan(TipCoords1[1]):
+        # Crack tip not present
+        TipCoords1=None
+        pass
+
     TipCoords2=(dgm.GetMetaDatumLDbl(metadatadict,"TipCoords2X",np.nan),
                 dgm.GetMetaDatumLDbl(metadatadict,"TipCoords2Y",np.nan))
+    if np.isnan(TipCoords2[0]) and np.isnan(TipCoords2[1]):
+        # Crack tip not present
+        TipCoords2=None
+        pass
+
+    # Backward compatibility. In old files both TipCoords1 and TipCoords2 were always present and 
+    # CrackCenterY was implicitly half way in between
+    if np.isnan(CrackCenterY):
+        CrackCenterY = (TipCoords1[1]+TipCoords2[1])/2.0
+        pass
+
+    CrackCenterCoords=(CrackCenterX,CrackCenterY)
+
     ROI_dic_yminidx=dgm.GetMetaDatumLInt(metadatadict,"ROI_dic_yminidx",0)
     ROI_dic_ymaxidx=dgm.GetMetaDatumLInt(metadatadict,"ROI_dic_ymaxidx",0)
 
@@ -94,7 +115,7 @@ def load_dgs(dgsfilename):
             Xinivec,Xposvecs,
             load1,load2,u_disps,v_disps,
             ROI_out_arrays,
-            CrackCenterX,TipCoords1,TipCoords2,
+            CrackCenterCoords,TipCoords1,TipCoords2,
             ROI_dic_yminidx,ROI_dic_ymaxidx,
             relshift_middleimg_lowerleft_corner_x_ref,
             relshift_middleimg_lowerleft_corner_x_diff,
@@ -160,7 +181,7 @@ def TestRegistration(nloads,Xposvecs,u_disps,v_disps,
                 
 def CalcInitialModel(nloads,CTODs,
                      load1,load2,
-                     Xposvecs,CrackCenterX,dic_dy,
+                     Xposvecs,CrackCenterCoords,dic_dy,
                      dic_span,Symmetric_COD,side,
                      YoungsModulus,
                      relshift_middleimg_lowerleft_corner_x_ref=None,
@@ -219,11 +240,11 @@ def CalcInitialModel(nloads,CTODs,
                 CTOD=CTODs[:,idx1,idx2,XCnt]-(load_diff/YoungsModulus)*(dic_dy*dic_span)
                 #CTOD=CTODs[:,idx1,idx2,XCnt]
                 if side==1:
-                    valid_locations = (Xposvec < CrackCenterX) & (~np.isnan(CTOD))
+                    valid_locations = (Xposvec < CrackCenterCoords[0]) & (~np.isnan(CTOD))
                     pass
                 else:
                     assert(side==2)
-                    valid_locations = (Xposvec > CrackCenterX) & (~np.isnan(CTOD))
+                    valid_locations = (Xposvec > CrackCenterCoords[0]) & (~np.isnan(CTOD))
                     pass
                 
                 XPositions[idx1,idx2]=np.concatenate((XPositions[idx1,idx2],Xposvec[valid_locations]))
@@ -237,16 +258,16 @@ def CalcInitialModel(nloads,CTODs,
 
             x0=(np.sqrt(nominal_length)/YoungsModulus,np.mean(XPositions[idx1,idx2]))
             #x0=(1.0e-13,np.mean(XPositions[idx1,idx2]))
-            (c5,xt)=initial_fit.fit_initial_model(x0,XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side,CTODValues[idx1,idx2],YoungsModulus,nominal_length,nominal_stress)
+            (c5,xt)=initial_fit.fit_initial_model(x0,XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterCoords[0],Symmetric_COD,side,CTODValues[idx1,idx2],YoungsModulus,nominal_length,nominal_stress)
             print("side=%d; xt=%f" % (side,xt))
-            InitialModels[idx1,idx2]=initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side)
+            InitialModels[idx1,idx2]=initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterCoords[0],Symmetric_COD,side)
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,xt),XPositions,load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],side)
             InitialCoeffs[:,idx1,idx2]=(c5,xt)
             npoints[idx1,idx2]=XPositions[idx1,idx2].shape[0]
             Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels[idx1,idx2])**2.0)/npoints[idx1,idx2]
             #import pdb
             #pdb.set_trace()
-            #junk = initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterX,Symmetric_COD,side)
+            #junk = initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterCoords[0],Symmetric_COD,side)
             if doplots:
                 # Do random sub-percentage
                 if np.random.rand() < .05:
@@ -293,7 +314,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     xt = scipy.interpolate.splev(sigma,tck)
     return xt
 
-def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side,doplots=True):
+def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side,doplots=True):
     # Perform fit to the results of the Initial models,
     # to seed the full model:
     #
@@ -351,10 +372,10 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     xt_or_neginf = InitialCoeffs[1,:,:].ravel()
     xt_or_neginf[np.isnan(xt_or_inf)]=-np.inf  # convert NaN to inf to avoid warning
     if side < 1.5: # left side
-        for_initial_fit = valid & ( xt_or_neginf >= TipCoords1[0]-tip_tolerance) &  ( xt_or_inf <= CrackCenterX+tip_tolerance) & (SNR.ravel() > 1.0)
+        for_initial_fit = valid & ( xt_or_neginf >= TipCoords1[0]-tip_tolerance) &  ( xt_or_inf <= CrackCenterCoords[0]+tip_tolerance) & (SNR.ravel() > 1.0)
         pass
     else: # right side
-        for_initial_fit = valid & ( xt_or_neginf >= CrackCenterX-tip_tolerance) &  ( xt_or_inf <= TipCoords2[0]+tip_tolerance) & (SNR.ravel() > 1.0)
+        for_initial_fit = valid & ( xt_or_neginf >= CrackCenterCoords[0]-tip_tolerance) &  ( xt_or_inf <= TipCoords2[0]+tip_tolerance) & (SNR.ravel() > 1.0)
         pass
     Error_unwrapped=Error.ravel()[valid]
     c5_unwrapped = InitialCoeffs[0,:,:].ravel()[valid]
@@ -474,7 +495,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
 
     return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot),(xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals))
     
-def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterX,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,fm_plotdata=None,doplots=True,opencl_ctx=None,opencl_dev=None):
+def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterCoords,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,fm_plotdata=None,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
     # This integrates to:
     #  COD2-COD1 = integral_sigma1^sigma2 C5*sqrt(x-xt)*u(x-xt) dsigma
@@ -525,7 +546,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
     # Perform model fit
 
     full_model_residual_unaccel_normalized=full_model.full_model_residual_normalized
-    args_unaccel=(InitialCoeffs,XPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterX,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
+    args_unaccel=(InitialCoeffs,XPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterCoords[0],Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot)
     
     if opencl_ctx is None:
         full_model_residual_normalized = full_model_residual_unaccel_normalized
@@ -533,7 +554,7 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
         pass
     else:
         full_model_residual_normalized=full_model_accel.full_model_residual_accel_normalized
-        args=(InitialCoeffs,XPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterX,Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
+        args=(InitialCoeffs,XPositions,CTODValues,np.mean(load1,axis=2),np.mean(load2,axis=2),minload,maxload,CrackCenterCoords[0],Symmetric_COD,side,nominal_length,nominal_modulus,nominal_stress,full_model_residual_plot,opencl_ctx,opencl_dev)
 
         test_accel=True
         
@@ -625,51 +646,71 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
 
 def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2):
 
-    assert(TipCoords1[0] < TipCoords2[0])
+    if TipCoords1 is not None and TipCoords2 is not None:
+        assert(TipCoords1[0] < TipCoords2[0])
+        pass
 
     minload=np.min(input_loads[~np.isnan(input_loads)].ravel())
     maxload=np.max(input_loads[~np.isnan(input_loads)].ravel())
 
     output_loads=np.linspace(minload,maxload,num_output_loads)
-    tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
-    tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
 
-    # Force tippos_side1 to decrease monotonically with increasing output_load
-    tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
-    while np.count_nonzero(tippos_side1_increase):
-        toobig_indices=np.where(tippos_side1_increase)[0]+1
-        tippos_side1[toobig_indices]=tippos_side1[toobig_indices-1]
+    tippos_side1=None
+    tippos_side2=None
+
+    if seed_param_side1 is not None:
+        tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
+
+        # Force tippos_side1 to decrease monotonically with increasing output_load
         tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+        while np.count_nonzero(tippos_side1_increase):
+            toobig_indices=np.where(tippos_side1_increase)[0]+1
+            tippos_side1[toobig_indices]=tippos_side1[toobig_indices-1]
+            tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
+            pass
+            
+        # Bound tippos_side1 to never be less than TipCoords1[0]
+        tippos_side1[tippos_side1 < TipCoords1[0]]=TipCoords1[0]
+
         pass
-    
-    # Bound tippos_side1 to never be less than TipCoords1[0]
-    tippos_side1[tippos_side1 < TipCoords1[0]]=TipCoords1[0]
 
+    if seed_param_side2 is not None:
+        tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
 
-    # Force tippos_side2 to increase monotonically with increasing output_load
-    tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
-    while np.count_nonzero(tippos_side2_decrease):
-        toosmall_indices=np.where(tippos_side2_decrease)[0]+1
-        tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
+        # Force tippos_side2 to increase monotonically with increasing output_load
         tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+        while np.count_nonzero(tippos_side2_decrease):
+            toosmall_indices=np.where(tippos_side2_decrease)[0]+1
+            tippos_side2[toosmall_indices]=tippos_side2[toosmall_indices-1]
+            tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
+            pass
+            
+        # Bound tippos_side2 to never be greater than TipCoords2[0]
+        tippos_side2[tippos_side2 > TipCoords2[0]]=TipCoords2[0]
         pass
-
-    # Bound tippos_side2 to never be greater than TipCoords2[0]
-    tippos_side2[tippos_side2 > TipCoords2[0]]=TipCoords2[0]
 
     return (output_loads,tippos_side1,tippos_side2)
 
 def save_closureprofile(filepath,output_loads,tippos_side1,tippos_side2):
  
-    open
-   
-    with open(filepath,"w") as csvfile:
-        cpwriter = csv.writer(csvfile,lineterminator="\n")
-        cpwriter.writerow(["Opening load (Pa)","xt (side 1, m)","xt (side 2, m)"])
-        for loadcnt in range(output_loads.shape[0]):
-            cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tippos_side2[loadcnt]])
-            pass
+    out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads,dtype='d',name='Opening load (Pa)'))
+    if tippos_side1 is not None:
+        out_frame.insert(len(out_frame.columns),"xt (side 1, m)",tippos_side1)
         pass
+
+    if tippos_side2 is not None:
+        out_frame.insert(len(out_frame.columns),"xt (side 2, m)",tippos_side2)
+        pass
+   
+    out_frame.to_csv(filepath)
+    
+    #with open(filepath,"w") as csvfile:
+    #    cpwriter = csv.writer(csvfile,lineterminator="\n")
+    #    cpwriter.writerow(["Opening load (Pa)","xt (side 1, m)","xt (side 2, m)"])
+    #    for loadcnt in range(output_loads.shape[0]):
+    #        cpwriter.writerow([ output_loads[loadcnt], tippos_side1[loadcnt],tippos_side2[loadcnt]])
+    #        pass
+    #    pass
     pass
 
 

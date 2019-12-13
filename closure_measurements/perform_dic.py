@@ -149,8 +149,8 @@ def execute_one_dic(params):
 
 
 def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
-                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,motioncontroller_tiptolerance=0.0,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
-    """ Perform DIC on data already loaded into memory """
+                            dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,CrackCenterCoords,TipCoords2,YRange,extra_wfmdict={},relshift_middleimg_lowerleft_corner_x=None,relshift_middleimg_lowerleft_corner_y=None,motioncontroller_tiptolerance=0.0,n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+    """ Perform DIC on data already loaded into memory. If either of TipCoords1 or TipCoords2 is None, the crack is presumed not to have that side"""
     
 
     #dgs_outfilename=os.path.splitext(dgdfilename)[0]+"_dic.dgs"
@@ -164,9 +164,24 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     
 
 
-    CrackCenterX=(TipCoords1[0]+TipCoords2[0])/2.0
-
+    #CrackCenterX=(TipCoords1[0]+TipCoords2[0])/2.0
+    #CrackCenterX=CrackCenterCoords[0]
     
+
+    if TipCoords1 is not None:
+        LeftLimit=TipCoords1[0]
+        pass
+    else:
+        LeftLimit=CrackCenterCoords[0]
+        pass
+
+    if TipCoords2 is not None:
+        RightLimit=TipCoords2[0]
+        pass
+    else:
+        rightLimit=CrackCenterCoords[0]
+        pass
+
 
     #sys.modules["__main__"].__dict__.update(globals())
     #sys.modules["__main__"].__dict__.update(locals())
@@ -176,10 +191,10 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     # must be to the right of the left tip, and the left hand edge of
     # each image must be to the left of the right tip
     if len(LowerLeft_XCoordinates.shape) > 1:
-        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (np.mean(LowerLeft_XCoordinates,axis=1)-motioncontroller_tiptolerance < TipCoords2[0])
+        XRange=(np.mean(LowerLeft_XCoordinates,axis=1)+nx*dx+motioncontroller_tiptolerance > LeftLimit) & (np.mean(LowerLeft_XCoordinates,axis=1)-motioncontroller_tiptolerance < RightLimit)
         pass
     else:
-        XRange=(LowerLeft_XCoordinates+nx*dx+motioncontroller_tiptolerance > TipCoords1[0]) & (LowerLeft_XCoordinates-motioncontroller_tiptolerance < TipCoords2[0])
+        XRange=(LowerLeft_XCoordinates+nx*dx+motioncontroller_tiptolerance > LeftLimit) & (LowerLeft_XCoordinates-motioncontroller_tiptolerance < RightLimit)
         pass
     XRangeSize=np.count_nonzero(XRange)
 
@@ -458,11 +473,16 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
 
     
     outmetadata={}
-    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("CrackCenterX",CrackCenterX))
-    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords1X",TipCoords1[0]))
-    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords1Y",TipCoords1[1]))
-    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords2X",TipCoords2[0]))
-    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords2Y",TipCoords2[1]))
+    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("CrackCenterX",CrackCenterCoords[0]))
+    dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("CrackCenterY",CrackCenterCoords[1]))
+    if TipCoords1 is not None:
+        dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords1X",TipCoords1[0]))
+        dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords1Y",TipCoords1[1]))
+        pass
+    if TipCoords2 is not None:
+        dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords2X",TipCoords2[0]))
+        dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumDbl("TipCoords2Y",TipCoords2[1]))
+        pass
 
     dgm.AddMetaDatumL(outmetadata,dgm.CreateMetaDatumInt("NumImages",XRange_idxs.shape[0]))
 
@@ -541,7 +561,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     dgf.writesnapshot(dgfh,outmetadata,outwfmdict)
     dgf.close(dgfh)
 
-    return (outwfmdict,outmetadata,u_disps,v_disps,ROI_out_arrays,Xposvecs,Xinivec,CrackCenterX,dic_dx,dic_dy)
+    return (outwfmdict,outmetadata,u_disps,v_disps,ROI_out_arrays,Xposvecs,Xinivec,CrackCenterCoords[0],dic_dx,dic_dy)
     
 
 
@@ -549,7 +569,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
     
 
 
-def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict={},n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
+def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,CrackCenterCoords,TipCoords2,YRange,extra_wfmdict={},n_threads=multiprocessing.cpu_count(),processpool=None,debug=True):
     """Perform DIC on optical microscopy .dgd file. 
      dic_scalefactor and dic_radius parameters to ncorr, given in pixels
      TipCoords1 is an (x,y) tuple indicating the coordinates of the tip with a 
@@ -564,4 +584,4 @@ def execute_dic(dgdfilename,dgs_outfilename,dic_scalefactor,dic_radius,TipCoords
     (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates)=load_dgd(dgdfilename)
 
     return execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
-                                   dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,TipCoords2,YRange,extra_wfmdict=extra_wfmdict,n_threads=n_threads,processpool=processpool,debug=debug)
+                                   dgs_outfilename,dic_scalefactor,dic_radius,TipCoords1,CrackCenterCoords,TipCoords2,YRange,extra_wfmdict=extra_wfmdict,n_threads=n_threads,processpool=processpool,debug=debug)

@@ -87,7 +87,7 @@ def run(_xmldoc,_element,
      Xinivec,Xposvecs,
      load1,load2,u_disps,v_disps,
      ROI_out_arrays,
-     CrackCenterX,TipCoords1,TipCoords2,
+     CrackCenterCoords,TipCoords1,TipCoords2,
      ROI_dic_yminidx,ROI_dic_ymaxidx,
      relshift_middleimg_lowerleft_corner_x_ref,
      relshift_middleimg_lowerleft_corner_x_diff,
@@ -98,41 +98,54 @@ def run(_xmldoc,_element,
 
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dc_dic_span_int,dc_dic_smoothing_window_int)
 
-    (InitialModels_side1,
-     InitialCoeffs_side1,
-     Error_side1,
-     npoints_side1,
-     XPositions_side1,
-     CTODValues_side1) = CalcInitialModel(nloads,CTODs,
-                                          load1,load2,
-                                          Xposvecs,CrackCenterX,
-                                          dic_dy,dc_dic_span_int,
-                                          dc_symmetric_cod_bool,1,YoungsModulus,
-                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
-                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
-                                          doplots=True)
+    if TipCoords1 is not None: # If crack has a side 1 (left)
+        (InitialModels_side1,
+         InitialCoeffs_side1,
+         Error_side1,
+         npoints_side1,
+         XPositions_side1,
+         CTODValues_side1) = CalcInitialModel(nloads,CTODs,
+                                              load1,load2,
+                                              Xposvecs,CrackCenterCoords,
+                                              dic_dy,dc_dic_span_int,
+                                              dc_symmetric_cod_bool,1,YoungsModulus,
+                                              relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
+                                              nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                              doplots=True)
+        pass
 
 
-    (InitialModels_side2,
-     InitialCoeffs_side2,
-     Error_side2,
-     npoints_side2,
-     XPositions_side2,
-     CTODValues_side2) = CalcInitialModel(nloads,CTODs,
-                                          load1,load2,
-                                          Xposvecs,CrackCenterX,
-                                          dic_dy,dc_dic_span_int,
-                                          dc_symmetric_cod_bool,2,YoungsModulus,
-                                          relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
-                                          nominal_length=nominal_length,nominal_stress=nominal_stress,
-                                          doplots=False)
+    if TipCoords2 is not None: # if crack has a side 2 (right)
+        (InitialModels_side2,
+         InitialCoeffs_side2,
+         Error_side2,
+         npoints_side2,
+         XPositions_side2,
+         CTODValues_side2) = CalcInitialModel(nloads,CTODs,
+                                              load1,load2,
+                                              Xposvecs,CrackCenterCoords,
+                                              dic_dy,dc_dic_span_int,
+                                              dc_symmetric_cod_bool,2,YoungsModulus,
+                                              relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
+                                              nominal_length=nominal_length,nominal_stress=nominal_stress,
+                                              doplots=False)
+        pass
 
 
-    (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=1,doplots=True)
-    (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
+    if TipCoords1 is not None: # If crack has a side 1 (left)
+        (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=1,doplots=True)
+        (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
+        pass
 
-    (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=2,doplots=True)
-    (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
+
+    if TipCoords2 is not None: # if crack has a side 2 (right)
+        (minload_side2,maxload_side2,seed_param_side2,lowest_avg_load_used_side2,fm_plots_side2,fm_plotdata_side2) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=2,doplots=True)
+        (fitplot_side2,pickableplot_side2,c5plot_side2)=fm_plots_side2
+        pass
+
+
+    model_params_side1=None
+    model_params_side2=None
 
 
     if dc_dic_fullmodel_optimization_bool:
@@ -140,21 +153,32 @@ def run(_xmldoc,_element,
         nominal_modulus = YoungsModulus  # Actually just used for normalization...
 
         
-        (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterX,dc_symmetric_cod_bool,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
-        (full_model_residual_plot_side1,full_model_optim_fitplot_side1) = full_model_optim_plots_side1
-        
-        model_params_side1 = full_model_params_side1
+        if TipCoords1 is not None: # If crack has a side 1 (left)
+            (full_model_params_side1,full_model_result_side1,full_model_optim_plots_side1) = CalcFullModel(load1,load2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterCoords,dc_symmetric_cod_bool,side=1,minload=minload_side1,maxload=maxload_side1,seed_param=seed_param_side1,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side1,opencl_ctx=ctx,opencl_dev=dev)
+            (full_model_residual_plot_side1,full_model_optim_fitplot_side1) = full_model_optim_plots_side1
+            
+            model_params_side1 = full_model_params_side1
+            pass
 
-        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterX,dc_symmetric_cod_bool,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
-        (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
+            if TipCoords2 is not None: # if crack has a side 2 (right)
+                (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,dc_symmetric_cod_bool,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
+                (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
+                pass
 
         model_params_side2 = full_model_params_side2
         pass
     else:
-        model_params_side1 = seed_param_side1
-        model_params_side2 = seed_param_side2
+        if TipCoords1 is not None: # If crack has a side 1 (left)
+            model_params_side1 = seed_param_side1
+            pass
+
+        if TipCoords2 is not None: # if crack has a side 2 (right)
+            model_params_side2 = seed_param_side2
+            pass
         pass
     
+
+
     (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,model_params_side1,model_params_side2,TipCoords1,TipCoords2)
     
     #closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
@@ -180,28 +204,36 @@ def run(_xmldoc,_element,
 
     process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads,tippos_side1,tippos_side2)
 
-    fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
-    if dc_dic_fullmodel_optimization_bool:
-        pl.figure(full_model_optim_fitplot_side1.number)
+    if TipCoords1 is not None:
+        fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
+        if dc_dic_fullmodel_optimization_bool:
+            pl.figure(full_model_optim_fitplot_side1.number)
+            pass
+        else:
+            pl.figure(fitplot_side1.number)
+            pass
+        pl.savefig(fitplot_side1_href.getpath(),dpi=300,transparent=True)
         pass
-    else:
-        pl.figure(fitplot_side1.number)
-        pass
-    pl.savefig(fitplot_side1_href.getpath(),dpi=300,transparent=True)
 
-    fitplot_side2_href = hrefv(outdic_basename+"_tipfit_side2.png",contexthref=_dest_href)
-    if dc_dic_fullmodel_optimization_bool:
-        pl.figure(full_model_optim_fitplot_side2.number)
+    if TipCoords2 is not None:
+        fitplot_side2_href = hrefv(outdic_basename+"_tipfit_side2.png",contexthref=_dest_href)
+        if dc_dic_fullmodel_optimization_bool:
+            pl.figure(full_model_optim_fitplot_side2.number)
+            pass
+        else:
+            pl.figure(fitplot_side2.number)
+            pass
+        pl.savefig(fitplot_side2_href.getpath(),dpi=300,transparent=True)
         pass
-    else:
-        pl.figure(fitplot_side2.number)
-        pass
-    pl.savefig(fitplot_side2_href.getpath(),dpi=300,transparent=True)
 
     closureprofile_plot_href = hrefv(outdic_basename+"_closureprofile.png",contexthref=_dest_href)
     pl.figure()
-    pl.plot(tippos_side1*1e3,output_loads/1e6,'-',
-            tippos_side2*1e3,output_loads/1e6,'-')
+    if tippos_side1 is not None:
+        pl.plot(tippos_side1*1e3,output_loads/1e6,'-')
+        pass
+    if tippos_side2 is not None:
+        pl.plot(tippos_side2*1e3,output_loads/1e6,'-')
+        pass
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
     pl.ylabel('Applied load (MPa)')
@@ -211,13 +243,21 @@ def run(_xmldoc,_element,
 
                          
     pl.close('all')
-    return [
+    ret = [
         #(("dc:closureprofile",{"side": "1"}),closureprofile_side1_tree),
         #(("dc:closureprofile",{"side": "2"}),closureprofile_side2_tree),
         ("dc:closureprofile",closureprofile_href),
         ("dc:closureprofileplot",closureprofile_plot_href),
-        (("dc:closure_lowest_avg_load_used",{"side": "1"}),numericunitsv(lowest_avg_load_used_side1,"Pa")),
-        (("dc:closure_lowest_avg_load_used",{"side": "2"}),numericunitsv(lowest_avg_load_used_side2,"Pa")),
-        (("dc:dic_tip_fit",{"side": "1"}),fitplot_side1_href),
-        (("dc:dic_tip_fit",{"side": "2"}),fitplot_side2_href),
     ]
+
+    if TipCoords1 is not None:        
+        ret.append( (("dc:closure_lowest_avg_load_used",{"side": "1"}),numericunitsv(lowest_avg_load_used_side1,"Pa")) )
+        ret.append( (("dc:dic_tip_fit",{"side": "1"}),fitplot_side1_href) )
+        pass
+
+    if TipCoords2 is not None:
+        ret.append( (("dc:closure_lowest_avg_load_used",{"side": "2"}),numericunitsv(lowest_avg_load_used_side2,"Pa")) )
+        ret.append( (("dc:dic_tip_fit",{"side": "2"}),fitplot_side2_href) )
+        pass
+    
+    return ret

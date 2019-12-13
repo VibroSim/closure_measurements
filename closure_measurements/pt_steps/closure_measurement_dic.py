@@ -22,6 +22,8 @@ def run(_xmldoc,_element,
         dc_crackpath,
         dc_coordinatetransform,
         dc_motioncontroller_tiptolerance_numericunits=numericunitsv(0.6e-3,'m'),
+        dc_hascrackside1_bool=True,
+        dc_hascrackside2_bool=True,
         dic_scalefactor_int=5,
         dic_radius_int=20,
         dic_span_int=20,
@@ -55,10 +57,33 @@ def run(_xmldoc,_element,
     crackendy = numericunitsv.fromxml(_xmldoc,_xmldoc.xpathsinglecontext(dc_crackpath, 'dc:segment/dc:keypoint[last()]/dc:ycoordinate')).value('m') - yshift
 
     assert(crackstartx < crackendx)
-    TipCoords1=(crackstartx,crackstarty)
-    TipCoords2=(crackendx,crackendy)
 
-    
+    if dc_hascrackside1_bool:
+        TipCoords1=(crackstartx,crackstarty)
+        pass
+    else:
+        TipCoords1=None
+        pass
+
+    if dc_hascrackside2_bool:        
+        TipCoords2=(crackendx,crackendy)
+        pass
+    else:
+        TipCoords2=None
+        pass
+
+
+    if dc_hascrackside1_bool and dc_hascrackside2_bool:
+        CrackCenterCoords = ((crackstartx+crackendx)/2.0,(crackstarty+crackendy)/2.0)
+        pass
+    elif dc_hascrackside1_bool:
+        CrackCenterCoords =(crackendx,crackendy)
+        pass
+    elif dc_hascrackside2_bool:
+        CrackCenterCoords =(crackstartx,crackstarty)
+        pass
+        
+
     #dc_scan_outdgd_href = hrefv(dc_scan_outdgd_str,contexthref=_dest_href)
 
     (Images,x0,y0,dx,dy,nx,ny,nimages,nloads,ybase,YMotionPosns,StressPosns,ActualStressPosns,LowerLeft_XCoordinates_MotionController,LowerLeft_YCoordinates_MotionController) = perform_dic.load_dgd(dc_scan_outdgd_href.getpath())    
@@ -140,7 +165,7 @@ def run(_xmldoc,_element,
      Xinivec,
      CrackCenterX,
      dic_dx,dic_dy)=execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoordinates,LowerLeft_YCoordinates,
-                                            dgs_outfilehref.getpath(),dic_scalefactor_int,dic_radius_int,TipCoords1,TipCoords2,YRange,
+                                            dgs_outfilehref.getpath(),dic_scalefactor_int,dic_radius_int,TipCoords1,CrackCenterCoords,TipCoords2,YRange,
                                             extra_wfmdict=extra_wfmdict,
                                             relshift_middleimg_lowerleft_corner_x=relshift_middleimg_lowerleft_corner_x,
                                             relshift_middleimg_lowerleft_corner_y=relshift_middleimg_lowerleft_corner_y,
