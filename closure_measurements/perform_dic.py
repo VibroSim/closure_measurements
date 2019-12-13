@@ -179,7 +179,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
         RightLimit=TipCoords2[0]
         pass
     else:
-        rightLimit=CrackCenterCoords[0]
+        RightLimit=CrackCenterCoords[0]
         pass
 
 

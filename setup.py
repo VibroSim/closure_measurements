@@ -1,6 +1,7 @@
 import shutil
 import re
 import os
+import numpy as np
 import os.path
 import subprocess
 from setuptools import setup

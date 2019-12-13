@@ -50,7 +50,7 @@ def main(args=None):
     
     #TipCoords1=(0.000339087,0.00317911) # should have smaller value of x
     TipCoords1 = ast.literal_eval(args[2])
-    CrackCenterCoords = = ast.literal_eval(args[3])
+    CrackCenterCoords = ast.literal_eval(args[3])
     #TipCoords2=(0.000375043,0.00690454) # Should have larger value of x
     TipCoords2 = ast.literal_eval(args[4])
 
