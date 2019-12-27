@@ -170,6 +170,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
 
     if TipCoords1 is not None:
         LeftLimit=TipCoords1[0]
+        print("Crack has side1 (left), tip @ %s" % (str(TipCoords1)))
         pass
     else:
         LeftLimit=CrackCenterCoords[0]
@@ -177,6 +178,7 @@ def execute_dic_loaded_data(Images,dx,dy,ybase,ActualStressPosns,LowerLeft_XCoor
 
     if TipCoords2 is not None:
         RightLimit=TipCoords2[0]
+        print("Crack has side2 (right), tip @ %s" % (str(TipCoords2)))
         pass
     else:
         RightLimit=CrackCenterCoords[0]
