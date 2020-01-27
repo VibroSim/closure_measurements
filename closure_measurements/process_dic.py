@@ -655,22 +655,20 @@ def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,
                      
 
 
-def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2):
+def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_loads,seed_param_side1,seed_param_side2,tippos1,tippos2):
 
-    if TipCoords1 is not None and TipCoords2 is not None:
-        assert(TipCoords1[0] < TipCoords2[0])
+    if tippos1 is not None and tippos2 is not None:
+        assert(tippos1 < tippos2)
         pass
 
-    minload=np.min(input_loads[~np.isnan(input_loads)].ravel())
-    maxload=np.max(input_loads[~np.isnan(input_loads)].ravel())
 
-    output_loads=np.linspace(minload,maxload,num_output_loads)
 
     tippos_side1=None
     tippos_side2=None
 
     if seed_param_side1 is not None:
-        tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads)
+        output_loads1=np.linspace(minload1,maxload1,num_output_loads)
+        tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads1)
 
         # Force tippos_side1 to decrease monotonically with increasing output_load
         tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
@@ -681,11 +679,12 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
             pass
             
         # Bound tippos_side1 to never be less than TipCoords1[0]
-        tippos_side1[tippos_side1 < TipCoords1[0]]=TipCoords1[0]
+        tippos_side1[tippos_side1 < tippos1]=tippos1
 
         pass
 
     if seed_param_side2 is not None:
+        output_loads2=np.linspace(minload2,maxload2,num_output_loads)
         tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
 
         # Force tippos_side2 to increase monotonically with increasing output_load
@@ -697,14 +696,16 @@ def calculate_closureprofile(input_loads,num_output_loads,seed_param_side1,seed_
             pass
             
         # Bound tippos_side2 to never be greater than TipCoords2[0]
-        tippos_side2[tippos_side2 > TipCoords2[0]]=TipCoords2[0]
+        tippos_side2[tippos_side2 > tippos2]=tippos2
         pass
 
-    return (output_loads,tippos_side1,tippos_side2)
+    return (output_loads1,tippos_side1,output_loads2,tippos_side2)
 
-def save_closureprofile(filepath,output_loads,tippos_side1,tippos_side2):
- 
-    out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads,dtype='d',name='Opening load (Pa)'))
+def save_closureprofile(filepath,output_loads_side1,tippos_side1,output_loads_side2,tippos_side2):
+
+    assert(output_loads_side1==output_loads_side2)
+    
+    out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side1,dtype='d',name='Opening load (Pa)'))
     if tippos_side1 is not None:
         out_frame.insert(len(out_frame.columns),"xt (side 1, m)",tippos_side1)
         pass

@@ -163,6 +163,12 @@ def main(args=None):
     seed_param_side1=None
     seed_param_side2=None
 
+    minload_side1=None
+    maxload_side1=None
+
+    minload_side2=None
+    maxload_side2=None
+
     if TipCoords1 is not None:
         (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side=1,doplots=True)
         (fitplot_side1,pickableplot_side1,c5plot_side1)=fm_plots_side1
@@ -190,7 +196,7 @@ def main(args=None):
 
         pass
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1,TipCoords2)
+    (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) =  process_dic.calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,num_output_loads,seed_param_side1,seed_param_side2,TipCoords1[0],TipCoords2[0])
 
     outdic_basename = os.path.splitext(os.path.split(dgsfilename)[1])[0]
     if os.path.splitext(outdic_basename)[1]==".dgs":  # Would happen if what we just split off was a .bz2, .gz, etc.
@@ -199,14 +205,14 @@ def main(args=None):
 
     outfilename = os.path.join(tempfile.gettempdir(),outdic_basename+"_closureprofile.csv")
     
-    process_dic.save_closureprofile(outfilename,output_loads,tippos_side1,tippos_side2)
+    process_dic.save_closureprofile(outfilename,output_loads_side1,tippos_side1,output_loads_side2,tippos_side2)
 
     pl.figure()
     if tippos_side1 is not None:
-        pl.plot(tippos_side1*1e3,output_loads/1e6,'-')
+        pl.plot(tippos_side1*1e3,output_loads_side1/1e6,'-')
         pass
     if tippos_side2 is not None:
-        pl.plot(tippos_side2*1e3,output_loads/1e6,'-')
+        pl.plot(tippos_side2*1e3,output_loads_side2/1e6,'-')
         pass
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')

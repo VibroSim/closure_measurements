@@ -17,6 +17,7 @@ from limatix import xmldoc
 from limatix.dc_value import numericunitsvalue as numericunitsv
 from limatix.dc_value import hrefvalue as hrefv
 from limatix.dc_value import xmltreevalue as xmltreev
+from limatix.dc_value import arrayvalue as arrayv
 
 def run(_xmldoc,_element,
         _dest_href,
@@ -98,6 +99,8 @@ def run(_xmldoc,_element,
 
     CTODs = Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dc_dic_span_int,dc_dic_smoothing_window_int)
 
+    tippos1=None
+    tippos2=None
     if TipCoords1 is not None: # If crack has a side 1 (left)
         (InitialModels_side1,
          InitialCoeffs_side1,
@@ -112,6 +115,7 @@ def run(_xmldoc,_element,
                                               relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                               nominal_length=nominal_length,nominal_stress=nominal_stress,
                                               doplots=True)
+        tippos1=TipCoords1[0]
         pass
 
 
@@ -129,8 +133,15 @@ def run(_xmldoc,_element,
                                               relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
                                               nominal_length=nominal_length,nominal_stress=nominal_stress,
                                               doplots=False)
+        tippos2=TipCoords2[0]
         pass
 
+
+    minload_side1=None
+    maxload_side1=None
+
+    minload_side2=None
+    maxload_side2=None
 
     if TipCoords1 is not None: # If crack has a side 1 (left)
         (minload_side1,maxload_side1,seed_param_side1,lowest_avg_load_used_side1,fm_plots_side1,fm_plotdata_side1) = InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs_side1,Error_side1,npoints_side1,XPositions_side1,CTODValues_side1,InitialModels_side1,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,dc_symmetric_cod_bool,side=1,doplots=True)
@@ -146,6 +157,7 @@ def run(_xmldoc,_element,
 
     model_params_side1=None
     model_params_side2=None
+
 
 
     if dc_dic_fullmodel_optimization_bool:
@@ -179,7 +191,19 @@ def run(_xmldoc,_element,
     
 
 
-    (output_loads,tippos_side1,tippos_side2) =  process_dic.calculate_closureprofile(load1,num_output_loads,model_params_side1,model_params_side2,TipCoords1,TipCoords2)
+    (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) =  process_dic.calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,num_output_loads,model_params_side1,model_params_side2,tippos1,tippos2)
+
+        if TipCoords1 is not None: # If crack has a side 1 (left)
+            # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load, , followed by tip coordinate
+            # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
+            load_tip_model_side1 = arrayv(np.concatenate((model_params_side1,(minload_side1,maxload_side1,tippos1))))
+            pass
+        
+        if TipCoords2 is not None: # if crack has a side 2 (right)
+            load_tip_model_side2 = arrayv(np.concatenate((model_params_side2,(minload_side2,maxload_side2,tippos2))))
+            pass
+        pass
+    
     
     #closureprofile_side1 = xmldoc.xmldoc.newdoc("dc:closureprofile",nsmap={"dc":"http://limatix.org/datacollect"},contexthref=_dest_href)
     #for loadcnt in range(num_output_loads):
@@ -202,7 +226,7 @@ def run(_xmldoc,_element,
 
     closureprofile_href = hrefv(outdic_basename+"_closureprofile.csv",contexthref=_dest_href)
 
-    process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads,tippos_side1,tippos_side2)
+    process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads_side1,tippos_side1,output_loads_side2,tippos_side2)
 
     if TipCoords1 is not None:
         fitplot_side1_href = hrefv(outdic_basename+"_tipfit_side1.png",contexthref=_dest_href)
@@ -229,10 +253,10 @@ def run(_xmldoc,_element,
     closureprofile_plot_href = hrefv(outdic_basename+"_closureprofile.png",contexthref=_dest_href)
     pl.figure()
     if tippos_side1 is not None:
-        pl.plot(tippos_side1*1e3,output_loads/1e6,'-')
+        pl.plot(tippos_side1*1e3,output_loads_side1/1e6,'-')
         pass
     if tippos_side2 is not None:
-        pl.plot(tippos_side2*1e3,output_loads/1e6,'-')
+        pl.plot(tippos_side2*1e3,output_loads_side2/1e6,'-')
         pass
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
@@ -248,16 +272,23 @@ def run(_xmldoc,_element,
         #(("dc:closureprofile",{"side": "2"}),closureprofile_side2_tree),
         ("dc:closureprofile",closureprofile_href),
         ("dc:closureprofileplot",closureprofile_plot_href),
+        ("dc:crackcenterx",numericunitsv(CrackCenterCoords[0],'m')),
+        ("dc:crackcentery",numericunitsv(CrackCenterCoords[1],'m')),
     ]
-
+                                          
     if TipCoords1 is not None:        
         ret.append( (("dc:closure_lowest_avg_load_used",{"side": "1"}),numericunitsv(lowest_avg_load_used_side1,"Pa")) )
         ret.append( (("dc:dic_tip_fit",{"side": "1"}),fitplot_side1_href) )
+        # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load, followed by tip coordinate
+        # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
+        ret.append( (("dc:load_tip_model",{"side": "1"}),load_tip_model_side1) )
+                                          
         pass
 
     if TipCoords2 is not None:
         ret.append( (("dc:closure_lowest_avg_load_used",{"side": "2"}),numericunitsv(lowest_avg_load_used_side2,"Pa")) )
         ret.append( (("dc:dic_tip_fit",{"side": "2"}),fitplot_side2_href) )
+        ret.append( (("dc:load_tip_model",{"side": "2"}),load_tip_model_side2) )
         pass
     
     return ret
