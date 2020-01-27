@@ -160,12 +160,12 @@ def run(_xmldoc,_element,
             model_params_side1 = full_model_params_side1
             pass
 
-            if TipCoords2 is not None: # if crack has a side 2 (right)
-                (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,dc_symmetric_cod_bool,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
-                (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
-                pass
+        if TipCoords2 is not None: # if crack has a side 2 (right)
+            (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,dc_symmetric_cod_bool,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
+            (full_model_residual_plot_side2,full_model_optim_fitplot_side2) = full_model_optim_plots_side2
+            model_params_side2 = full_model_params_side2
+            pass
 
-        model_params_side2 = full_model_params_side2
         pass
     else:
         if TipCoords1 is not None: # If crack has a side 1 (left)

@@ -360,8 +360,19 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     # default min_dic_points_per_meter = 20 points/0.5mm = 40 points/mm = 40000
 
     # minimum number of points required for this half of crack
-    min_num_points = min_dic_points_per_meter*(TipCoords2[0]-TipCoords1[0])/2.0
+    #min_num_points = min_dic_points_per_meter*(TipCoords2[0]-TipCoords1[0])/2.0
+    
+    num_pts_reqd = []
+    if TipCoords1 is not None:
+        num_pts_reqd.append(min_dic_points_per_meter*abs(CrackCenterCoords[0]-TipCoords1[0]))
+        pass
 
+    if TipCoords2 is not None:
+        num_pts_reqd.append(min_dic_points_per_meter*abs(TipCoords2[0]-CrackCenterCoords[0]))
+        pass
+
+    min_num_points = np.max(num_pts_reqd)
+        
     valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() >= min_num_points) &  (c5_or_neginf >= min_c5)
     
     # Use only data points for which xt is inside data range for initial fit and with good SNR
