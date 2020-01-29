@@ -668,7 +668,7 @@ def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_load
 
     if seed_param_side1 is not None:
         output_loads1=np.linspace(minload1,maxload1,num_output_loads)
-        tippos_side1 = EvalEffectiveTip(minload,maxload,seed_param_side1,output_loads1)
+        tippos_side1 = EvalEffectiveTip(minload1,maxload1,seed_param_side1,output_loads1)
 
         # Force tippos_side1 to decrease monotonically with increasing output_load
         tippos_side1_increase = tippos_side1[1:] > tippos_side1[:-1]
@@ -685,7 +685,7 @@ def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_load
 
     if seed_param_side2 is not None:
         output_loads2=np.linspace(minload2,maxload2,num_output_loads)
-        tippos_side2 = EvalEffectiveTip(minload,maxload,seed_param_side2,output_loads)
+        tippos_side2 = EvalEffectiveTip(minload2,maxload2,seed_param_side2,output_loads2)
 
         # Force tippos_side2 to increase monotonically with increasing output_load
         tippos_side2_decrease = tippos_side2[1:] < tippos_side2[:-1]
@@ -703,7 +703,7 @@ def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_load
 
 def save_closureprofile(filepath,output_loads_side1,tippos_side1,output_loads_side2,tippos_side2):
 
-    assert(output_loads_side1==output_loads_side2)
+    assert((output_loads_side1==output_loads_side2).all())
     
     out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side1,dtype='d',name='Opening load (Pa)'))
     if tippos_side1 is not None:

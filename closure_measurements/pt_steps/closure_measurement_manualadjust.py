@@ -7,11 +7,12 @@ import numpy as np
 
 from matplotlib import pyplot as pl
 from matplotlib.gridspec import GridSpec
+from matplotlib.widgets import Slider
 
 import limatix.timestamp
 from closure_measurements import process_dic
 
-from closure_measurements.process_dic import load_dgs,Calc_CTODs,CalcInitialModel,EvalEffectiveTip,InitializeFullModel,CalcFullModel
+from closure_measurements.process_dic import load_dgs,Calc_CTODs,CalcInitialModel,EvalEffectiveTip,InitializeFullModel,CalcFullModel,calculate_closureprofile
 
 from limatix import dc_value
 from limatix import xmldoc
@@ -139,10 +140,11 @@ def run(_xmldoc,_element,
 
 
     
-    load_tip_model_side1=_xmldoc.xpathsinglecontext(_element,"dc:load_tip_model[@side='1']",default=None)
-    load_tip_model_side2=_xmldoc.xpathsinglecontext(_element,"dc:load_tip_model[@side='2']",default=None)
+    load_tip_model_side1_el=_xmldoc.xpathsinglecontext(_element,"dc:load_tip_model[@side='1']",default=None)
+    load_tip_model_side2_el=_xmldoc.xpathsinglecontext(_element,"dc:load_tip_model[@side='2']",default=None)
 
-    if load_tip_model_side1 is not None:
+    if load_tip_model_side1_el is not None:
+        load_tip_model_side1=arrayv.fromxml(_xmldoc,load_tip_model_side1_el).value()
         model_params_side1=load_tip_model_side1[:5]
         minload_side1=load_tip_model_side1[5]
         maxload_side1=load_tip_model_side1[6]
@@ -150,32 +152,46 @@ def run(_xmldoc,_element,
 
         pass
 
+
+    if load_tip_model_side2_el is not None:
+        load_tip_model_side2=arrayv.fromxml(_xmldoc,load_tip_model_side2_el).value()
+        model_params_side2=load_tip_model_side2[:5]
+        minload_side2=load_tip_model_side2[5]
+        maxload_side2=load_tip_model_side2[6]
+        tippos2 = load_tip_model_side2[7]
+
+        pass
+
     tipfig = pl.figure()
     gs=GridSpec(5,2,height_ratios=[4,1,1,1,1])
     ax=pl.subplot(gs[0,0:2])
 
-    s1c1=Slider(pl.subplot(gs[1,0]),'side1c1',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side1[0])
-    s1c2=Slider(pl.subplot(gs[2,0]),'side1c2',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side1[1])
-    s1c3=Slider(pl.subplot(gs[3,0]),'side1c3',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side1[2])
-    s1c4=Slider(pl.subplot(gs[4,0]),'side1c4',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side1[3])
+    if load_tip_model_side1_el is not None:
+        s1c1=Slider(pl.subplot(gs[1,0]),'side1c1',(tippos1-5e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+5e-3)*1e3,valinit=model_params_side1[0]*1e3)
+        s1c2=Slider(pl.subplot(gs[2,0]),'side1c2',(tippos1-5e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+5e-3)*1e3,valinit=model_params_side1[1]*1e3)
+        s1c3=Slider(pl.subplot(gs[3,0]),'side1c3',(tippos1-5e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+5e-3)*1e3,valinit=model_params_side1[2]*1e3)
+        s1c4=Slider(pl.subplot(gs[4,0]),'side1c4',(tippos1-5e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+5e-3)*1e3,valinit=model_params_side1[3]*1e3)
+        pass
 
-    s2c1=Slider(pl.subplot(gs[1,1]),'side2c1',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[0])
-    s2c2=Slider(pl.subplot(gs[2,1]),'side2c2',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[1])
-    s2c3=Slider(pl.subplot(gs[3,1]),'side2c3',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[2])
-    s2c4=Slider(pl.subplot(gs[4,1]),'side2c4',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[3])
-
+    if load_tip_model_side2_el is not None:
+        s2c1=Slider(pl.subplot(gs[1,1]),'side2c1',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[0]*1e3)
+        s2c2=Slider(pl.subplot(gs[2,1]),'side2c2',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[1]*1e3)
+        s2c3=Slider(pl.subplot(gs[3,1]),'side2c3',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[2]*1e3)
+        s2c4=Slider(pl.subplot(gs[4,1]),'side2c4',(tippos1-1e-3)*1e3,(dc_crackcenterx_numericunits.value("m")+1e-3)*1e3,valinit=model_params_side2[3]*1e3)
+        pass
     
     def drawfunc():
         pl.figure(tipfig.number)
         pl.sca(ax)
         ax.clear()
-        (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) = calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,15,model_params_side1,model_params_side2,tippos1,tippos2)
-        if tippos_side1 is not None:
+        (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) = calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,num_output_loads,model_params_side1,model_params_side2,tippos1,tippos2)
+        if load_tip_model_side1_el is not None:
             pl.plot(tippos_side1*1e3,output_loads_side1/1e6,'-')
             pl.plot(xt_unwrapped_side1*1e3,avg_load_unwrapped_side1/1e6,'o')
             pl.plot(xt_vals_side1*1e3,avg_load_vals_side1/1e6,'x')           
             pass
-        if tippos_side2 is not None:
+        
+        if load_tip_model_side2_el is not None:
             pl.plot(tippos_side2*1e3,output_loads_side2/1e6,'-')
             pl.plot(xt_unwrapped_side2*1e3,avg_load_unwrapped_side2/1e6,'o')
             pl.plot(xt_vals_side2*1e3,avg_load_vals_side2/1e6,'x')           
@@ -190,32 +206,36 @@ def run(_xmldoc,_element,
 
     
     def update(val):
-        if tippos_side1 is not None:
-            model_params_side1[0] = s1c1.val
-            model_params_side1[1] = s1c2.val
-            model_params_side1[2] = s1c3.val
-            model_params_side1[3] = s1c4.val
+        if load_tip_model_side1_el is not None:
+            model_params_side1[0] = s1c1.val/1e3
+            model_params_side1[1] = s1c2.val/1e3
+            model_params_side1[2] = s1c3.val/1e3
+            model_params_side1[3] = s1c4.val/1e3
             pass
-        if tippos_side2 is not None:
-            model_params_side2[0] = s2c1.val
-            model_params_side2[1] = s2c2.val
-            model_params_side2[2] = s2c3.val
-            model_params_side2[3] = s2c4.val
+        if load_tip_model_side2_el is not None:
+            model_params_side2[0] = s2c1.val/1e3
+            model_params_side2[1] = s2c2.val/1e3
+            model_params_side2[2] = s2c3.val/1e3
+            model_params_side2[3] = s2c4.val/1e3
             pass
         drawfunc()
         pl.draw()
         pass
 
-    s1c1.on_changed(update)
-    s1c2.on_changed(update)
-    s1c3.on_changed(update)
-    s1c4.on_changed(update)
-    s2c1.on_changed(update)
-    s2c2.on_changed(update)
-    s2c3.on_changed(update)
-    s2c4.on_changed(update)
-        
-    closureprofile_manual_plot_href = hrefv(outdic_basename+"_closureprofile_manual.png",contexthref=_dest_href)
+    if load_tip_model_side1_el is not None:
+        s1c1.on_changed(update)
+        s1c2.on_changed(update)
+        s1c3.on_changed(update)
+        s1c4.on_changed(update)
+        pass
+
+    if load_tip_model_side2_el is not None:
+        s2c1.on_changed(update)
+        s2c2.on_changed(update)
+        s2c3.on_changed(update)
+        s2c4.on_changed(update)
+        pass
+
 
     drawfunc()
 
@@ -225,14 +245,16 @@ def run(_xmldoc,_element,
 
     (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) =  process_dic.calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,num_output_loads,model_params_side1,model_params_side2,tippos1,tippos2)
 
-    if TipCoords1 is not None: # If crack has a side 1 (left)
+    if load_tip_model_side1_el is not None:
+        # If crack has a side 1 (left)
         # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load
         # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
-        load_tip_model_side1 = arrayv(np.concatenate((model_params_side1,(minload_side1,maxload_side1,tippos1))))
+        new_load_tip_model_side1 = arrayv(np.concatenate((model_params_side1,(minload_side1,maxload_side1,tippos1))))
         pass
         
-    if TipCoords2 is not None: # if crack has a side 2 (right)
-        load_tip_model_side2 = arrayv(np.concatenate((model_params_side2,(minload_side2,maxload_side2,tippos2))))
+    if load_tip_model_side2_el is not None:
+        # if crack has a side 2 (right)
+        new_load_tip_model_side2 = arrayv(np.concatenate((model_params_side2,(minload_side2,maxload_side2,tippos2))))
         pass
     
 
@@ -241,12 +263,14 @@ def run(_xmldoc,_element,
         outdic_basename = posixpath.splitext(outdic_basename)[0]
         pass
 
-    closureprofile_href = hrefv(outdic_basename+"_closureprofilemanual.csv",contexthref=_dest_href)
+
+    closureprofile_href = hrefv(outdic_basename+"_closureprofile_manual.csv",contexthref=_dest_href)
 
     process_dic.save_closureprofile(closureprofile_href.getpath(),output_loads_side1,tippos_side1,output_loads_side2,tippos_side2)
 
 
     pl.figure(tipfig.number)
+    closureprofile_manual_plot_href = hrefv(outdic_basename+"_closureprofile_manual.png",contexthref=_dest_href)
     pl.savefig(closureprofile_manual_plot_href.getpath(),dpi=300,transparent=True)
 
                          
@@ -258,15 +282,15 @@ def run(_xmldoc,_element,
         ("dc:closureprofile_manual_plot",closureprofile_manual_plot_href),
     ]
                                           
-    if TipCoords1 is not None:        
+    if load_tip_model_side1_el is not None:
         # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load
         # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
-        ret.append( (("dc:load_tip_manual_model",{"side": "1"}),load_tip_model_side1) )
+        ret.append( (("dc:load_tip_manual_model",{"side": "1"}),new_load_tip_model_side1) )
                                           
         pass
 
-    if TipCoords2 is not None:
-        ret.append( (("dc:load_tip_manual_model",{"side": "2"}),load_tip_model_side2) )
+    if load_tip_model_side2_el is not None:
+        ret.append( (("dc:load_tip_manual_model",{"side": "2"}),new_load_tip_model_side2) )
         pass
     
     return ret

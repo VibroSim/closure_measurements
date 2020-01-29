@@ -193,15 +193,14 @@ def run(_xmldoc,_element,
 
     (output_loads_side1,tippos_side1,output_loads_side2,tippos_side2) =  process_dic.calculate_closureprofile(minload_side1,maxload_side1,minload_side2,maxload_side2,num_output_loads,model_params_side1,model_params_side2,tippos1,tippos2)
 
-        if TipCoords1 is not None: # If crack has a side 1 (left)
-            # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load, , followed by tip coordinate
-            # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
-            load_tip_model_side1 = arrayv(np.concatenate((model_params_side1,(minload_side1,maxload_side1,tippos1))))
-            pass
-        
-        if TipCoords2 is not None: # if crack has a side 2 (right)
-            load_tip_model_side2 = arrayv(np.concatenate((model_params_side2,(minload_side2,maxload_side2,tippos2))))
-            pass
+    if TipCoords1 is not None: # If crack has a side 1 (left)
+        # Elements of the load_tip_model are the four spline coefficients, followed by c5, followed by minimum load, followed by maximum load, , followed by tip coordinate
+        # These numbers, with the exception of c5 can be used to calculate tip position given load by EvalEffectiveTip()
+        load_tip_model_side1 = arrayv(np.concatenate((model_params_side1,(minload_side1,maxload_side1,tippos1))))
+        pass
+            
+    if TipCoords2 is not None: # if crack has a side 2 (right)
+        load_tip_model_side2 = arrayv(np.concatenate((model_params_side2,(minload_side2,maxload_side2,tippos2))))
         pass
     
     
