@@ -265,7 +265,15 @@ def run(_xmldoc,_element,
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
     pl.ylabel('Applied load (MPa)')
-    pl.legend(('Side 1','Side 2'),loc="best")
+    if tippos_side1 is not None and tippos_side2 is not None:
+        pl.legend(('Side 1','Side 2'),loc="best")
+	pass
+    if tippos_side1 is not None and tippos_side2 is None:
+        pl.legend(('Side 1',' '),loc="best")
+	pass
+    if tippos_side1 is None and tippos_side2 is not None:
+        pl.legend(('Side 2',' '),loc="best")
+	pass
     pl.title(dc_specimen_str)
     pl.savefig(closureprofile_plot_href.getpath(),dpi=300,transparent=True)
 
