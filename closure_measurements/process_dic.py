@@ -712,10 +712,10 @@ def save_closureprofile(filepath,output_loads_side1,tippos_side1,output_loads_si
     #If a side does not exist, there should be no load on it --> assert((output_loads_side1==output_loads_side2).all())
     if tippos_side1 is not None:
         out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side1,dtype='d',name='Opening load (Pa)'))
-	pass
+        pass
     else:
-	out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side2,dtype='d',name='Opening load (Pa)'))
-	pass
+        out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side2,dtype='d',name='Opening load (Pa)'))
+        pass
 
     if tippos_side1 is not None:
         out_frame.insert(len(out_frame.columns),"xt (side 1, m)",tippos_side1)
