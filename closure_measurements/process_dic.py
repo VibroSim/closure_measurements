@@ -17,6 +17,7 @@ from . import dic_ctod
 from . import initial_fit
 from . import full_model
 from . import full_model_accel
+from . import elliptical_opening
 
 def load_dgs(dgsfilename):
     (metadatadict,wfmdict)=dgf.loadsnapshot(dgsfilename)
@@ -127,6 +128,7 @@ def load_dgs(dgsfilename):
 def Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_yminidx,ROI_dic_ymaxidx,dic_span,dic_window):
     
     CTODs=np.zeros((dic_nx,nloads,nloads,XRangeSize),dtype='d')
+
     for XCnt in range(XRangeSize):
 
         for idx1 in range(nloads):
@@ -146,6 +148,7 @@ def Calc_CTODs(dic_nx,nloads,XRangeSize,Xposvecs,v_disps,ROI_out_arrays,ROI_dic_
                 #    continue
                 (CTOD,top_disp,bot_disp) = dic_ctod.dic_ctod(v_disps[:,:,idx1,idx2,XCnt],dic_span,dic_window,ROI_out_arrays[:,:,idx1,idx2,XCnt],ROI_dic_yminidx,ROI_dic_ymaxidx)
                 CTODs[:,idx1,idx2,XCnt]=CTOD
+
                 #CTODs[:,idx2,idx1,XCnt]=-CTOD
                 pass
             pass
@@ -262,6 +265,9 @@ def CalcInitialModel(nloads,CTODs,
             print("side=%d; xt=%f" % (side,xt))
             InitialModels[idx1,idx2]=initial_fit.initial_model((c5,xt),XPositions[idx1,idx2],load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],CrackCenterCoords[0],Symmetric_COD,side)
             #InitialModels[idx2,idx1]=-initial_fit.initial_model((c5,xt),XPositions,load1[idx1,idx2,XCnt],load2[idx1,idx2,XCnt],side)
+            #if idx2 > idx1 + 3:
+                #c5 = 2
+                #continue
             InitialCoeffs[:,idx1,idx2]=(c5,xt)
             npoints[idx1,idx2]=XPositions[idx1,idx2].shape[0]
             Error[idx1,idx2]=np.sum((CTODValues[idx1,idx2]-InitialModels[idx1,idx2])**2.0)/npoints[idx1,idx2]
@@ -314,7 +320,7 @@ def EvalEffectiveTip(minload,maxload,full_model_params,sigma):
     xt = scipy.interpolate.splev(sigma,tck)
     return xt
 
-def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterCoords,tip_tolerance,min_dic_points_per_meter,Symmetric_COD,side,doplots=True):
+def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,YoungsModulus,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterCoords,tip_tolerance,SampleHalfWidth,SampleThicknessmin_dic_points_per_meter,Symmetric_COD,side,doplots=True):
     # Perform fit to the results of the Initial models,
     # to seed the full model:
     #
@@ -372,7 +378,7 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
         pass
 
     min_num_points = np.max(num_pts_reqd)
-        
+    load_diff = (load2-load1).mean(axis=2)        
     valid = (~np.isnan(InitialCoeffs[1,:,:].ravel())) & (npoints.ravel() >= min_num_points) &  (c5_or_neginf >= min_c5)
     
     # Use only data points for which xt is inside data range for initial fit and with good SNR
@@ -382,6 +388,8 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
 
     xt_or_neginf = InitialCoeffs[1,:,:].ravel()
     xt_or_neginf[np.isnan(xt_or_inf)]=-np.inf  # convert NaN to inf to avoid warning
+
+
     if side < 1.5: # left side
         for_initial_fit = valid & ( xt_or_neginf >= TipCoords1[0]-tip_tolerance) &  ( xt_or_inf <= CrackCenterCoords[0]+tip_tolerance) & (SNR.ravel() > 1.0)
         pass
@@ -399,26 +407,47 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     avg_load=(load1+load2).mean(axis=2)/2.0
     avg_load_unwrapped=avg_load.ravel()[valid]
 
+    diff_load = (load2-load1).mean(axis=2)
+    diff_load_unwrapped = diff_load.ravel()[valid]
+
+    max_load = load2.mean(axis=2)
+    max_load_unwrapped=max_load.ravel()[valid]
     ## Now sort them so lowest error comes first
     #errsort=np.argsort(Error_unwrapped)    
     
     #raise ValueError("Break")
-    ## Do fit to first 50
+    # Do fit to first 50
     #xt_vals = xt_unwrapped[errsort[:50]]
     #avg_load_vals=avg_load_unwrapped[errsort[:50]]
     #c5_vals = c5_unwrapped[errsort[:50]]
     
     xt_vals = InitialCoeffs[1,:,:].ravel()[for_initial_fit]
     avg_load_vals = avg_load.ravel()[for_initial_fit]
+    diff_load_vals = diff_load.ravel()[for_initial_fit]
+    max_load_vals = max_load.ravel()[for_initial_fit]
     c5_vals = InitialCoeffs[0,:,:].ravel()[for_initial_fit]
 
-    
+    #Routine to calculate the crack depth opening for all valid differential/initial model fits using the unique values of the leading coefficient, c5, and the corresponding closure point.  
+    xt_depth = np.zeros(c5_vals.shape[0])
+
+    print('side','Leading Coefficient','xt','depth')
+    for c5idx in range(c5_vals.shape[0]):
+
+        xt_depth[c5idx] = elliptical_opening.fit_elliptical_model(0.0,xt_vals[c5idx],CrackCenterCoords[0],SampleHalfWidth,SampleThickness,YoungsModulus,c5_vals[c5idx])
+        print(side,c5_vals[c5idx],np.abs(xt_vals[c5idx])-CrackCenterCoords[0],xt_depth[c5idx])
+        pass
+
 
 
     avg_load_vals_sort=np.argsort(avg_load_vals)
     avg_load_vals_sorted=avg_load_vals[avg_load_vals_sort]
+
+    max_load_vals_sort=np.argsort(max_load_vals)
+    max_load_vals_sorted=max_load_vals[max_load_vals_sort]    
+
     xt_vals_sorted = xt_vals[avg_load_vals_sort]
-    
+    xt_depth_sorted = xt_depth[avg_load_vals_sort]
+	
     lowest_avg_load_used = np.min(avg_load_vals)
 
     minload=np.min(load1[~np.isnan(load1)].ravel())
@@ -427,14 +456,30 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     # Use scipy.interpolate.splrep to do fit.
     # task=-1 means we supply interior knots (there aren't any)
     # k=3 means 3rd order
-    (t,c,k) = scipy.interpolate.splrep(avg_load_vals_sorted,xt_vals_sorted,xb=minload,xe=maxload,k=3,task=-1,t=np.array([],dtype='f'))
-    assert((t[:4]==minload).all())
-    assert((t[4:]==maxload).all())
+    (t_avg,c_avg,k_avg) = scipy.interpolate.splrep(avg_load_vals_sorted,xt_vals_sorted,xb=minload,xe=maxload,k=3,task=-1,t=np.array([],dtype='f'))
+    assert((t_avg[:4]==minload).all())
+    assert((t_avg[4:]==maxload).all())
 
-    assert((c[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
-    assert(k==3)
-    seed_param=(c[0],c[1],c[2],c[3],np.median(c5_vals))
-    
+    assert((c_avg[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
+    assert(k_avg==3)
+    seed_param_avg=(c_avg[0],c_avg[1],c_avg[2],c_avg[3],np.median(c5_vals))
+
+    (t_max,c_max,k_max) = scipy.interpolate.splrep(max_load_vals_sorted,xt_vals_sorted,xb=minload,xe=maxload,k=3,task=-1,t=np.array([],dtype='f'))
+    assert((t_max[:4]==minload).all())
+    assert((t_max[4:]==maxload).all())
+
+    assert((c_max[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
+    assert(k_max==3)
+    seed_param_max=(c_max[0],c_max[1],c_max[2],c_max[3],np.median(c5_vals))
+
+    (t_depth,c_depth,k_depth) = scipy.interpolate.splrep(avg_load_vals_sorted,xt_depth_sorted,xb=minload,xe=maxload,k=3,task=-1,t=np.array([],dtype='f'))
+    assert((t_depth[:4]==minload).all())
+    assert((t_depth[4:]==maxload).all())
+
+    assert((c_depth[4:]==0).all()) # This spline only has 4 coefficients. For some reason splrep returns four more that are all zero
+    assert(k_depth==3)
+    seed_param_depth=(c_depth[0],c_depth[1],c_depth[2],c_depth[3],np.median(c5_vals))	
+
     fitplot=None
     pickableplot=None
     c5plot=None
@@ -443,23 +488,26 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
     if doplots:
 
         sigmarange=np.linspace(minload,maxload,150)
-        fittedvals=EvalEffectiveTip(minload,maxload,seed_param,sigmarange)
+        fittedvals_avg=EvalEffectiveTip(minload,maxload,seed_param_avg,sigmarange)
+        fittedvals_max=EvalEffectiveTip(minload,maxload,seed_param_max,sigmarange)
 
         from matplotlib import pyplot as pl
+        
 
         fitplot=pl.figure()
-        pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
-                xt_vals*1e3,avg_load_vals/1e6,'o',
-                fittedvals*1e3,sigmarange/1e6,'-')
+        #xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',
+        #fittedvals_avg*1e3,sigmarange/1e6,'-'
+        pl.plot(xt_vals*1e3,avg_load_vals/1e6,'o')
         pl.ylabel('Load (MPa)')
         pl.xlabel('Tip position (mm)')
-        pl.legend(('All DIC fit data','xt within data range and good SNR','fit to xt within data range and good SNR'),loc="best")
+        pl.legend(('Differential Model'),loc="best")
         pl.title('xt')
         pl.grid()
 
         
         pickableplot=pl.figure()
         pl.plot(xt_unwrapped*1e3,avg_load_unwrapped/1e6,'x',picker=5)
+        #pl.plot(xt_unwrapped*1e3,max_load_unwrapped/1e6,'D',picker=5)
                 #xt_vals*1e3,avg_load_vals/1e6,'o',
                 #fittedvals*1e3,sigmarange/1e6,'-')
         pl.ylabel('Load (MPa)')
@@ -495,16 +543,36 @@ def InitializeFullModel(load1,load2,TipCoords1,TipCoords2,InitialCoeffs,Error,np
             pass
         pickableplot.canvas.mpl_connect('pick_event',dicfitpick)
         
-        c5plot=pl.figure()
-        pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
-                avg_load_vals/1e6,c5_vals,'o')
-        pl.xlabel('Load (MPa)')
-        pl.title('c5')
+        c5plot=pl.figure(1001)
+        #pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
+                #avg_load_vals/1e6,c5_vals,'o')
+        pl.plot(c5_vals*YoungsModulus,avg_load_vals/1e6,'o')
+        pl.xlabel(r'$\xi$')
+        pl.ylabel(r'$Applied \ Load \ (MPa)$')
+        pl.title('')
         pl.grid()
+		
+        c5plot_diff=pl.figure(1003)
+        #pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
+                #avg_load_vals/1e6,c5_vals,'o')
+        pl.plot(xt_depth*1e6,avg_load_vals/1e6,'o')
+        pl.xlabel(r'$Z (\mu m)$')
+        pl.ylabel(r'$Applied \ Load \ (MPa)$')
+        pl.title('')
+        pl.grid()
+        
+        ratioplot=pl.figure(1004)
+        #pl.plot(avg_load_unwrapped/1e6,c5_unwrapped,'x',
+                #avg_load_vals/1e6,c5_vals,'o')
+        pl.plot(xt_depth/np.abs(xt_vals-CrackCenterCoords[0]),avg_load_vals/1e6,'o')
+        pl.xlabel(r'$x_{d}/x_{t}$')
+        pl.ylabel(r'$Applied \ Load \ (MPa)$')
+        pl.title('')
+        pl.grid()        
         pass
 
 
-    return (minload,maxload,seed_param,lowest_avg_load_used,(fitplot,pickableplot,c5plot),(xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals))
+    return (minload,maxload,seed_param_avg,seed_param_depth,lowest_avg_load_used,(fitplot,pickableplot,c5plot),(xt_unwrapped,avg_load_unwrapped,xt_vals,avg_load_vals,xt_depth),(xt_unwrapped,max_load_unwrapped,xt_vals,max_load_vals))
     
 def CalcFullModel(load1,load2,InitialCoeffs,Error,npoints,XPositions,CTODValues,InitialModels,CrackCenterCoords,Symmetric_COD,side,minload,maxload,seed_param,nominal_length=2e-3,nominal_modulus=100.0e9,nominal_stress=50e6,fm_plotdata=None,doplots=True,opencl_ctx=None,opencl_dev=None):
     # Our model (asymmetric case) is dCOD/dsigma = C5*sqrt(x-xt)u(x-xt) where u(x) is the unit step
