@@ -389,25 +389,384 @@ if __name__=="__main__":
 	F = (M1+M2*aot**2+M3*aot**4)*np.sqrt(np.pi/Q)
 	fw = np.sqrt(np.cos((np.pi*(tippos_side2_avg*1.0e6-crack_middle*1e6))/(2*half_width*1e3)*np.sqrt(aot))**-1.0)
     
-    if relshift_middleimg_lowerleft_corner_x_ref is not None:
-        # Only applies to DIC dgs files generated through dc_process that have additional registration info added!
-        TestRegistration(nloads,Xposvecs,u_disps,v_disps,
-                         ROI_out_arrays,
-                         relshift_middleimg_lowerleft_corner_x_ref=relshift_middleimg_lowerleft_corner_x_ref,
-                         relshift_middleimg_lowerleft_corner_x_diff=relshift_middleimg_lowerleft_corner_x_diff,
-                         relshift_middleimg_lowerleft_corner_y_ref=relshift_middleimg_lowerleft_corner_y_ref,
-                         relshift_middleimg_lowerleft_corner_y_diff=relshift_middleimg_lowerleft_corner_y_diff)
-        pass
+	xi = 1.6*np.sqrt(8)/np.sqrt(np.pi)*(1-0.3**2)*aoc_avg*F*fw*g
+	#pl.figure(1001)
+	#pl.plot(output_loads2*1e-6,xi/youngs_modulus*1e-6)
+	#Integral Model
+	aoc_full = (-tippos_side1_full*1.0e6-crack_middle*1e6)/(tippos_side2_full*1.0e6-crack_middle*1e6)
+	aot = (-tippos_side1_full*1.0e6-crack_middle*1e6)/(50*1e3)
+
+	g = 1+(0.1+0.35*aot**2)
+	M1 = 1.13-0.09*aoc_full
+	M2 = -0.54+(0.89/(0.2+aoc_full))
+	M3 = 0.5-(1/(0.65+aoc_full))+14*(1-aoc_full)**24
+	Q = 1+1.464*aoc_full**1.65
+	F = (M1+M2*aot**2+M3*aot**4)*np.sqrt(np.pi/Q)
+	fw = np.sqrt(np.cos((np.pi*(tippos_side2_full*1.0e6-crack_middle*1e6))/(2*half_width*1e3)*np.sqrt(aot))**-1.0)
+    
+	xi = 1.6*np.sqrt(8)/np.sqrt(np.pi)*(1-0.3**2)*aoc_full*F*fw*g
+	#pl.figure(1001)
+	#pl.plot(output_loads_full_2*1e-6,xi/youngs_modulus*1e-6)
+	
+	#FEA Output 
+	aoc_fea = np.array(aspect_ratio_fea)
+	aot = np.array(depth_fea)/50.0
+
+	g = 1+(0.1+0.35*aot**2)
+	M1 = 1.13-0.09*aoc_fea
+	M2 = -0.54+(0.89/(0.2+aoc_fea))
+	M3 = 0.5-(1/(0.65+aoc_fea))+14*(1-aoc_fea)**24
+	Q = 1+1.464*aoc_fea**1.65
+	F = (M1+M2*aot**2+M3*aot**4)*np.sqrt(np.pi/Q)
+	fw = np.sqrt(np.cos((np.pi*(front_fea*1e3))/(2*half_width*1e3)*np.sqrt(aot))**-1.0)
+    
+	xi = 1.6*np.sqrt(8)/np.sqrt(np.pi)*(1-0.3**2)*aoc_fea*F*fw*g
+	pl.figure(1001)
+	pl.plot(xi,fea_load*1e-6)
+	pl.legend([r'$\xi$',r'$FEA$'],loc='upper left')
+	pl.xlabel(r'$\xi$')
+	pl.ylabel(r'$Applied \ Load \ (MPa)$')
+	pl.title('')
+	#pl.grid()
+	pl.savefig('fea_c5.png',dpi=600)
+	
+	pl.figure(1003)
+	#pl.plot(output_loads1/1e6,aoc_avg)
+	#pl.plot(output_loads_full_1/1e6,aoc_full)
+	pl.plot(depth_fea*1e3,fea_load/1e6)
+	pl.legend([r'$x_{d}$',r'$FEA$'],loc='upper left')   
+	pl.xlabel(r'$x_{d} (\mu m)$')
+	pl.ylabel(r'$Applied \ Load \ (MPa)$')
+	pl.title('')
+	#pl.grid()
+	pl.savefig('fea_xd.png',dpi=600)
+	
+	pl.figure(1004)
+	#pl.plot(output_loads1/1e6,aoc_avg)
+	#pl.plot(output_loads_full_1/1e6,aoc_full)
+	pl.plot(aspect_ratio_fea,fea_load/1e6)
+	pl.legend([r'$x_{d}/x_{t}$',r'$FEA$'],loc='upper left')  
+	pl.xlabel(r'$x_{d}/x_{t}$')
+	pl.ylabel(r'$Applied \ Load \ (MPa)$')
+	pl.title('')
+	#pl.grid()
+	pl.savefig('fea_car.png',dpi=600)	
+	
+	pl.figure(2001)
+	#pl.plot(output_loads1/1e6,aoc_avg)
+	#pl.plot(output_loads_full_1/1e6,aoc_full)
+	pl.plot(front_fea*1e3,fea_load/1e6)
+	pl.legend([r'$x_{t}$',r'$FEA$'],loc='upper left')  
+	pl.xlabel(r'$x (\mu m)$')
+	pl.ylabel(r'$Applied \ Load \ (MPa)$')
+	pl.title('')
+	pl.grid()
+	pl.savefig('fea_xt.png',dpi=600)
+	
+	## Plot diagnostics...
+	# Should have at least one plot that evaluates
+	# overall performance in fitting the entire data set.
+	#
+	# ... how to collapse it down to 2D?
+	# (Could add additional lines to the InitialModel plots...)
+	#pl.figure()
+	
+	"""
+	#This is for 013L
+	xaxis = (np.arange(0.0,(225-25)*dic_dx,dic_dx)-crack_middle)*1e6
+	yaxis = (np.arange(0.0,(260-150)*dic_dy,dic_dy)-crack_middle)*1e6
+	
+	idx1_plot = 5
+	idx2_plot = 7
+	#Offset by -11.25 micron
+	
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+        #The contourf figures plot the direct DIC results for the first attempt at gathering data form C18-AFVT-013L with the file call being in the large block of short titanium cracks.  This is formatted such that it will only plot the region of the image where DIC displacement fields are present.  Does not work for other applied load increments and other data sets.  The line plot calls work for any applied load increment and for any sample.  It is important to have the sigma_ave and sigma_diff claculations anytime idx1_plot and idx2_plot are changed  The axis are offset such that the origin is around the crack center.  This is currently configured for the above stated sample  but also works for the other C18-AFVT-013L data since the crack is in the same position with the same center measurement  All of the generated plots save at 600 dpi.  
+	pl.figure()
+	pl.contourf(xaxis+600,yaxis,np.transpose(v_disps[25:225,150:260,idx1_plot,idx2_plot,4])*1e6+11.25)
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$Y (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	cbar = pl.colorbar()
+	cbar.set_label(r'$(\mu m)$', rotation=0)
+	pl.grid()
+	pl.savefig('mostly_closed.png',dpi=600)
+	
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Initial Fit")
+	pl.xlabel(r'$X  (\mu m)$')
+	pl.ylabel(r'$COD  (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i \ and \ \sigma_{diff} = %i$' % (sigma_ave,sigma_diff))
+	pl.grid()
+	pl.savefig('lowdiff_model.png',dpi=600)
+	
+	idx1_plot = 15
+	idx2_plot = 17
+	#Offset by -8.85 micron
+	
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+	pl.figure()
+	pl.contourf(xaxis+600,yaxis+900,np.transpose(v_disps[25:225,150:260,idx1_plot,idx2_plot,4])*1e6+8.85)
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$Y (\mu m)$')
+	cbar = pl.colorbar()
+	cbar.set_label(r'$(\mu m)$', rotation=0)
+	pl.savefig('mostly_open.png',dpi=600)
+	pl.grid()
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	pl.figure()
+	#pl.plot(XPositions_side1[idx1_plot,idx2_plot]*1e3,CTODValues_side1[idx1_plot,idx2_plot]*1e6,'k.',
+			#XPositionsSorted_side1*1e3,InitialModelValuesSorted_side1*1e6,'r-')
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.')
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD  (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.grid()
+	pl.savefig('mostly_open_profile.png',dpi=600)
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Initial Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('mostly_open_fitt.png',dpi=600)
+	
+
+	
+	idx1_plot = 11
+	idx2_plot = 21
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+	pl.figure()
+	pl.contourf(xaxis+600,yaxis+900,np.transpose(v_disps[25:225,150:260,idx1_plot,idx2_plot,4])*1e6+40)
+	pl.xlabel(r'$X \ Position (\mu m)$')
+	pl.ylabel(r'$Y \ Position (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	cbar = pl.colorbar()
+	cbar.set_label(r'$(\mu m)$', rotation=0)
+	pl.grid()
+	pl.savefig('highdiff_field.png',dpi=600)
+	
+	pl.figure()
+	pl.plot(yaxis+900,v_disps[175,150:260,idx1_plot,idx2_plot,4]*1e6+40.15,'k+',label="Line A")	
+	pl.plot(yaxis+900,v_disps[210,150:260,idx1_plot,idx2_plot,4]*1e6+40.15,'kx',label="Line B")
+	pl.plot(yaxis+900,v_disps[220,150:260,idx1_plot,idx2_plot,4]*1e6+40.15,'k.',label="Line C")
+	pl.plot(yaxis+900,(sigma_diff/YoungsModulus)*(yaxis+900)*1e6,label="COD Correction")
+	pl.legend(loc="lower right")
+	pl.xlabel(r'$Y  (\mu m)$')
+	pl.ylabel(r'$Vertical \ Displacement (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.ylim([-1.75, 2])
+	pl.xlim([-250, 400])
+	pl.grid()
+	pl.savefig('highdiff_columns.png',dpi=600)	
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Initial Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('highdiff_model.png',dpi=600)
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,(CTODValues_side2[idx1_plot,idx2_plot])*1e6+(sigma_diff*1e6/YoungsModulus)*(dic_dy*dic_span)*1e6,'r.',label="Raw Data")
+	pl.xlabel(r'$X  (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('strain_correction.png',dpi=600)
+	
+	idx1_plot = 10
+	idx2_plot = 20
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Differential Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('highdiff_model.png',dpi=600)
+	
+	idx1_plot = 12
+	idx2_plot = 18
+	
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Differential Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('meddiff_model.png',dpi=600)	
+	
+	idx1_plot = 14
+	idx2_plot = 16
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Differential Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	pl.savefig('lowdiff_model.png',dpi=600)	
     
     
+	idx1_plot = 15
+	idx2_plot = 17
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Differential Fit")
+
+	idx1_plot = 11
+	idx2_plot = 21
+	#Offset by -40 micron
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Differential Fit")
     
-    ## Plot diagnostics...
-    # Should have at least one plot that evaluates
-    # overall performance in fitting the entire data set.
-    #
-    # ... how to collapse it down to 2D?
-    # (Could add additional lines to the InitialModel plots...)
-    #pl.figure()
-    
-    pl.show()
-    pass
+    """
+   
+	
+	#Plotting specific to FEA dat with a new contourf plot and new opening plots.  This is formatted for the 2D through crack case since this plots both sides of the crack which are not present in the 3D simulations due to symmetry.  However, it would be interesting to see the difference between the displacement fields for the surface crack case.
+	"""
+	xaxis = (np.arange(0.0,(151-0)*dic_dx,dic_dx)-crack_middle)*1e6
+	yaxis = (np.arange(0.0,(151-0)*dic_dy,dic_dy)-crack_middle)*1e6
+
+	idx1_plot=5
+	idx2_plot=7
+	
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)	
+	
+	pl.figure()
+	pl.contourf(xaxis,yaxis,np.transpose(v_disps[:,:,idx1_plot,idx2_plot,0])*1e6-73)	
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$Y (\mu m)$')
+	pl.title(r'$\sigma_{ave} = %i;\ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	cbar = pl.colorbar()
+	cbar.set_label(r'$(\mu m)$', rotation=0)
+	pl.grid()
+	pl.savefig('dic_field.png',dpi=600)
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	pl.savefig('fea_contour.png',dpi=600)	
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.',label="Corrected COD")
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label="Initial Fit")
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	pl.title(r'$\sigma_{ave} = %i \ and \ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	pl.legend(loc="best")
+	"""
+	
+	idx1_plot=5
+	idx2_plot=7
+	
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)	
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+	pl.figure()
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.')
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'r-',label=r'$\Delta \sigma = 50 MPa')
+	pl.xlabel(r'$X (\mu m)$')
+	pl.ylabel(r'$COD (\mu m)$')
+	pl.grid()
+	#pl.title(r'$\sigma_{ave} = %i \ and \ \Delta \sigma = %i$' % (sigma_ave,sigma_diff))
+	#pl.legend(loc="best")
+	
+	idx1_plot=1
+	idx2_plot=15
+	
+	sigma_ave = (load2[idx1_plot,idx2_plot,0]/1.e6+load1[idx1_plot,idx2_plot,0]/1.e6)/2
+	sigma_diff = (load2[idx1_plot,idx2_plot,0]/1.e6-load1[idx1_plot,idx2_plot,0]/1.e6)	
+	
+	XPositionsSort_side2=np.argsort(XPositions_side2[idx1_plot,idx2_plot])
+	XPositionsSorted_side2=XPositions_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	InitialModelValuesSorted_side2=InitialModels_side2[idx1_plot,idx2_plot][XPositionsSort_side2]
+	
+
+	pl.plot((XPositions_side2[idx1_plot,idx2_plot]-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,CTODValues_side2[idx1_plot,idx2_plot]*1e6,'k.')
+	pl.plot((XPositionsSorted_side2-np.min(XPositions_side2[idx1_plot,idx2_plot]))*1e6,InitialModelValuesSorted_side2*1e6,'b-',label=r'$\Delta \sigma = 350 MPa')
+	pl.legend(loc="best")
+	
+	pl.show()	
+
+	pass
