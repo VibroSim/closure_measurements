@@ -64,8 +64,26 @@ if __name__=="__main__":
 	dgsfilename = "/home/cgiuffre/crackclosure_abaqus_modeling_3d/closure_measurement/synthetic_FEA_data_tension.dgs"
 	#dgsfilename = "/home/cgiuffre/crackclosure_abaqus_modeling/closure_measurement/synthetic_FEA_data_partial.dgs"
         
-        (full_model_params_side2,full_model_result_side2,full_model_optim_plots_side2) = CalcFullModel(load1,load2,InitialCoeffs_side2,Error_side2,npoints_side2,XPositions_side2,CTODValues_side2,InitialModels_side2,CrackCenterCoords,Symmetric_COD,side=2,minload=minload_side2,maxload=maxload_side2,seed_param=seed_param_side2,nominal_length=nominal_length,nominal_modulus=nominal_modulus,nominal_stress=nominal_stress,doplots=True,fm_plotdata=fm_plotdata_side2,opencl_ctx=ctx,opencl_dev=dev)
-        pass
+	#Cannot currently remember why these two files are in a seperate group
+	#dgsfilename =  "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-007R_optical_files/0001-C18-AFVT-007R_optical_collect_optical_data_dic.dgs"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-008M_optical_files/0000-C18-AFVT-008M_optical_collect_optical_data-1_dic.dgs.bz2"	
+        #Short Crack Titanium Samples grown from FIB notches
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-013L_optical_files/0001-C18-AFVT-013L_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-010W_optical_files/0001-C18-AFVT-010W_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-011X_optical_files/0001-C18-AFVT-011X_optical_collect_optical_data_dic.dgs"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-014C_optical_files/0000-C18-AFVT-014C_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-016K_optical_files/0000-C18-AFVT-016K_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-017G_optical_files/0000-C18-AFVT-017G_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVT-018J_optical_files/0000-C18-AFVT-018J_optical_collect_optical_data_dic.dgs"
+	
+        #Short Crack Inconel Samples grown from FIB notches
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-001K_optical_files/0000-C18-AFVN-001K_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-006X_optical_files/0000-C18-AFVN-006X_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-008N_optical_files/0000-C18-AFVN-008N_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-009T_optical_files/0000-C18-AFVN-009T_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-013X_optical_files/0001-C18-AFVN-013X_optical_collect_optical_data-7_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-015G_optical_files/0000-C18-AFVN-015G_optical_collect_optical_data_dic.dgs.bz2"
+	#dgsfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-016C_optical_files/0001-C18-AFVN-016C_optical_collect_optical_data_dic.dgs.bz2"
 
     
     if relshift_middleimg_lowerleft_corner_x_ref is not None:
