@@ -4,10 +4,11 @@ import os
 import multiprocessing
 import numpy as np
 #from matplotlib import pyplot as pl 
-from function_as_script import scriptify
-from closure_measurements.perform_dic import execute_dic as execute_dic_function
-execute_dic=scriptify(execute_dic_function)
+#from function_as_script import scriptify
+#from closure_measurements.perform_dic import execute_dic as execute_dic_function
+#execute_dic=scriptify(execute_dic_function)
 
+from closure_measurements.perform_dic import execute_dic
 
 # Probably want to run view_dic_input on the same data file
 # prior to running this to set TipCoords1 and 2 and YRange.
@@ -21,7 +22,7 @@ processpool = multiprocessing.Pool(multiprocessing.cpu_count()/2+1)
 
 if __name__=="__main__":
 
-    dgdfilename = "/tmp/C14-UTCB-004F_tortuosity_2014-09-17_collect_optical_data-0027.dgd"
+    dgdfilename = "/databrowse/AFRLvibro2016/fatigue/Optical_DIC_data/C18-AFVN-007W_optical_files/0001-C18-AFVN-007W_optical_collect_optical_data.dgd"
     
     dic_scalefactor=5
     dic_radius=20 # measured (I think) in the unscaled original pixels
