@@ -22,7 +22,7 @@ from limatix.dc_value import xmltreevalue as xmltreev
 from limatix.dc_value import arrayvalue as arrayv
 
 def run(_xmldoc,_element,
-        _dest_href,
+        _dest_href, # obsolete (see below)
         _inputfilename,
         dc_scan_outdic_href,
         dc_crackcenterx_numericunits,
@@ -31,6 +31,7 @@ def run(_xmldoc,_element,
         dc_coordinatetransform,
         dc_spcYoungsModulus_numericunits,
         dc_specimen_str,
+        dc_dest_href=None, # updated replacement for _dest_href
         dc_dic_span_int=20,
         dc_dic_smoothing_window_int=3,
         # NOTE: Default tip tolerance is smaller here than in command line version
@@ -39,6 +40,10 @@ def run(_xmldoc,_element,
         dc_dic_tip_tolerance_numericunits=numericunitsv(50e-6,"m"),
         dc_min_dic_points_per_meter_numericunits=numericunitsv(40000,"1/m"),
         dc_symmetric_cod_bool=True):
+
+    if dc_dest_href is not None:
+        _dest_href=dc_dest_href
+        pass
 
     # Non-adjustable parameters
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization

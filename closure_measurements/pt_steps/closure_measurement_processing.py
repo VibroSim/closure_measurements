@@ -20,13 +20,14 @@ from limatix.dc_value import xmltreevalue as xmltreev
 from limatix.dc_value import arrayvalue as arrayv
 
 def run(_xmldoc,_element,
-        _dest_href,
+        _dest_href, # obsolete (see below)
         _inputfilename,
         dc_measnum_int,
         dc_scan_outdic_href,
         dc_coordinatetransform,
         dc_spcYoungsModulus_numericunits,
         dc_specimen_str,
+        dc_dest_href=None, # updated replacement for _dest_href
         dc_dic_span_int=20,
         dc_dic_smoothing_window_int=3,
         # NOTE: Default tip tolerance is smaller here than in command line version
@@ -38,6 +39,10 @@ def run(_xmldoc,_element,
         dc_dic_fullmodel_optimization_bool=False, # Enable fullmodel optimization by adding a <dc:dic_fullmodel_optimization>True</dc:dic_fullmodel_optimization> tag to the experiment log entry (and xlp file)
         debug_bool=False):
     
+    if dc_dest_href is not None:
+        _dest_href=dc_dest_href
+        pass
+
     # Non-adjustable parameters
     nominal_length=2e-3 # nominal crack length, for nondimensional normalization
     #nominal_modulus=100.0e9 # nominal modulus
@@ -260,7 +265,15 @@ def run(_xmldoc,_element,
     pl.grid()
     pl.xlabel('Tip position (relative to stitched image, mm)')
     pl.ylabel('Applied load (MPa)')
-    pl.legend(('Side 1','Side 2'),loc="best")
+    if tippos_side1 is not None and tippos_side2 is not None:
+        pl.legend(('Side 1','Side 2'),loc="best")
+        pass
+    if tippos_side1 is not None and tippos_side2 is None:
+        pl.legend(('Side 1',' '),loc="best")
+        pass
+    if tippos_side1 is None and tippos_side2 is not None:
+        pl.legend(('Side 2',' '),loc="best")
+        pass
     pl.title(dc_specimen_str)
     pl.savefig(closureprofile_plot_href.getpath(),dpi=300,transparent=True)
 

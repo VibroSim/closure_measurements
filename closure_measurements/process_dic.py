@@ -733,6 +733,8 @@ def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_load
 
     tippos_side1=None
     tippos_side2=None
+    output_loads1=None
+    output_loads2=None
 
     if seed_param_side1 is not None:
         output_loads1=np.linspace(minload1,maxload1,num_output_loads)
@@ -771,9 +773,18 @@ def calculate_closureprofile(minload1,maxload1,minload2,maxload2,num_output_load
 
 def save_closureprofile(filepath,output_loads_side1,tippos_side1,output_loads_side2,tippos_side2):
 
-    assert((output_loads_side1==output_loads_side2).all())
-    
-    out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side1,dtype='d',name='Opening load (Pa)'))
+    if tippos_side1 is not None and tippos_side2 is not None:
+        assert((output_loads_side1==output_loads_side2).all())
+        pass
+
+    #If a side does not exist, there should be no load on it --> assert((output_loads_side1==output_loads_side2).all())
+    if tippos_side1 is not None:
+        out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side1,dtype='d',name='Opening load (Pa)'))
+        pass
+    else:
+        out_frame = pd.DataFrame(index=pd.Float64Index(data=output_loads_side2,dtype='d',name='Opening load (Pa)'))
+        pass
+
     if tippos_side1 is not None:
         out_frame.insert(len(out_frame.columns),"xt (side 1, m)",tippos_side1)
         pass
